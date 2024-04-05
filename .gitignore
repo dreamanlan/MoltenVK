@@ -4,6 +4,9 @@
 # MoltenVK dependencies
 /External
 
+!/External/SPIRV-Cross/spirv_msl.cpp
+!/External/SPIRV-Cross/spirv_msl.hpp
+
 # Vulkan CTS testing artifacts
 /Scripts/TestResults.qpa
 /Scripts/shadercache.bin
