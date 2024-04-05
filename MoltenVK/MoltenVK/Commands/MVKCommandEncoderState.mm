@@ -1391,7 +1391,10 @@ void MVKOcclusionQueryCommandEncoderState::endOcclusionQuery(MVKOcclusionQueryPo
 
 void MVKOcclusionQueryCommandEncoderState::encodeImpl(uint32_t stage) {
 	if (stage != kMVKGraphicsStageRasterization) { return; }
-
+    
+    if(_hasRasterized)
+        return;
+    
 	_hasRasterized = true;
 	[_cmdEncoder->_mtlRenderEncoder setVisibilityResultMode: _mtlVisibilityResultMode
 													 offset: _cmdEncoder->_pEncodingContext->mtlVisibilityResultOffset];
