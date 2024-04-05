@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "9999"
+   LastUpgradeVersion = "1530"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
-      buildImplicitDependencies = "YES">
+      buildImplicitDependencies = "YES"
+      buildArchitectures = "Automatic">
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "YES"
@@ -14,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "DCFD7EC12A45BAAA007BBBF7"
-               BuildableName = "ExternalDependencies-xrOS"
-               BlueprintName = "ExternalDependencies-xrOS"
-               ReferencedContainer = "container:ExternalDependencies.xcodeproj">
+               BlueprintIdentifier = "A9B8EE091A98D796009C5A02"
+               BuildableName = "libMoltenVK.a"
+               BlueprintName = "MoltenVK-iOS-static"
+               ReferencedContainer = "container:MoltenVK.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -30,7 +31,7 @@
       shouldAutocreateTestPlan = "YES">
    </TestAction>
    <LaunchAction
-      buildConfiguration = "Release"
+      buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
@@ -49,10 +50,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DCFD7EC12A45BAAA007BBBF7"
-            BuildableName = "ExternalDependencies-xrOS"
-            BlueprintName = "ExternalDependencies-xrOS"
-            ReferencedContainer = "container:ExternalDependencies.xcodeproj">
+            BlueprintIdentifier = "A9B8EE091A98D796009C5A02"
+            BuildableName = "libMoltenVK.a"
+            BlueprintName = "MoltenVK-iOS-static"
+            ReferencedContainer = "container:MoltenVK.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </ProfileAction>

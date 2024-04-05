@@ -16,12 +16,6 @@ xcuserdata/
 project.xcworkspace/
 *.xccheckout
 *.xcscmblueprint
-ExternalDependencies.xcodeproj/
-MoltenVKPackaging.xcodeproj/
-*.xcodeproj/
-*.xcodeproj
-*.pbxproj
-*.scscheme
 
 # build products
 build/
