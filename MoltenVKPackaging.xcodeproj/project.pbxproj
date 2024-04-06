@@ -54,7 +54,6 @@
 				A9F4D9F82B8EC22E004AD576 /* PBXTargetDependency */,
 				A979A9662B9A233C00F69E67 /* PBXTargetDependency */,
 				A9F4D9F62B8EC22E004AD576 /* PBXTargetDependency */,
-				A9F4D9FA2B8EC22E004AD576 /* PBXTargetDependency */,
 			);
 			name = MoltenVK;
 			productName = Package;
@@ -62,13 +61,6 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXContainerItemProxy section */
-		2FEA0ABD2490302F00EEF3AD /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A92DB3EE1CE0F72500FBC835 /* MoltenVK.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 2FEA0ABA24902F9F00EEF3AD;
-			remoteInfo = "MoltenVK-tvOS";
-		};
 		A92DB3F41CE0F72500FBC835 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A92DB3EE1CE0F72500FBC835 /* MoltenVK.xcodeproj */;
@@ -146,20 +138,6 @@
 			remoteGlobalIDString = A9F4D96A2B8E7366004AD576;
 			remoteInfo = "MoltenVK-iOS-dynamic";
 		};
-		A9F4D9B82B8EB63E004AD576 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A92DB3EE1CE0F72500FBC835 /* MoltenVK.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = A9F4D9B22B8EB2FC004AD576;
-			remoteInfo = "MoltenVK-tvOS-dynamic";
-		};
-		A9F4D9D72B8EBA14004AD576 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A92DB3EE1CE0F72500FBC835 /* MoltenVK.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = A9F4D9CE2B8EB6DC004AD576;
-			remoteInfo = "MoltenVK-xrOS-dynamic";
-		};
 		A9F4D9F02B8EC210004AD576 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A92DB3EE1CE0F72500FBC835 /* MoltenVK.xcodeproj */;
@@ -187,20 +165,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = A9F4D9D92B8EC112004AD576;
 			remoteInfo = "MoltenVK-macOS-dynamic";
-		};
-		A9F4D9F92B8EC22E004AD576 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A92DB3EE1CE0F72500FBC835 /* MoltenVK.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = A9F4D99E2B8EB2FC004AD576;
-			remoteInfo = "MoltenVK-tvOS-dynamic";
-		};
-		DCFD7F652A45BC7D007BBBF7 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A92DB3EE1CE0F72500FBC835 /* MoltenVK.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = DCFD7F622A45BC6E007BBBF7;
-			remoteInfo = "MoltenVK-xrOS";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -265,10 +229,6 @@
 				A9F4D9F42B8EC210004AD576 /* MoltenVK.framework */,
 				A92DB3F51CE0F72500FBC835 /* libMoltenVK.a */,
 				A9F4D9992B8E8CE0004AD576 /* MoltenVK.framework */,
-				2FEA0ABE2490302F00EEF3AD /* libMoltenVK.a */,
-				A9F4D9B92B8EB63E004AD576 /* MoltenVK.framework */,
-				DCFD7F662A45BC7D007BBBF7 /* libMoltenVK.a */,
-				A9F4D9D82B8EBA14004AD576 /* MoltenVK.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -367,13 +327,6 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
-		2FEA0ABE2490302F00EEF3AD /* libMoltenVK.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libMoltenVK.a;
-			remoteRef = 2FEA0ABD2490302F00EEF3AD /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 		A92DB3F51CE0F72500FBC835 /* libMoltenVK.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -423,32 +376,11 @@
 			remoteRef = A9F4D9982B8E8CE0004AD576 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		A9F4D9B92B8EB63E004AD576 /* MoltenVK.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = MoltenVK.framework;
-			remoteRef = A9F4D9B82B8EB63E004AD576 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A9F4D9D82B8EBA14004AD576 /* MoltenVK.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = MoltenVK.framework;
-			remoteRef = A9F4D9D72B8EBA14004AD576 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 		A9F4D9F42B8EC210004AD576 /* MoltenVK.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
 			path = MoltenVK.framework;
 			remoteRef = A9F4D9F32B8EC210004AD576 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		DCFD7F662A45BC7D007BBBF7 /* libMoltenVK.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libMoltenVK.a;
-			remoteRef = DCFD7F652A45BC7D007BBBF7 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -564,11 +496,6 @@
 			name = "MoltenVK-macOS-dynamic";
 			targetProxy = A9F4D9F72B8EC22E004AD576 /* PBXContainerItemProxy */;
 		};
-		A9F4D9FA2B8EC22E004AD576 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = "MoltenVK-tvOS-dynamic";
-			targetProxy = A9F4D9F92B8EC22E004AD576 /* PBXContainerItemProxy */;
-		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -576,6 +503,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DISABLE_MANUAL_TARGET_ORDER_BUILD_WARNING = YES;
+				OTHER_LDFLAGS = "";
 			};
 			name = Debug;
 		};
@@ -583,6 +511,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DISABLE_MANUAL_TARGET_ORDER_BUILD_WARNING = YES;
+				OTHER_LDFLAGS = "";
 			};
 			name = Release;
 		};
@@ -652,7 +581,7 @@
 				A90B2B221A9B6170008EE819 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		A975D5882140585200D4834F /* Build configuration list for PBXAggregateTarget "MoltenVK-iOS" */ = {
 			isa = XCConfigurationList;
@@ -661,7 +590,7 @@
 				A975D58A2140585200D4834F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		A975D59B2140586700D4834F /* Build configuration list for PBXAggregateTarget "MoltenVK-macOS" */ = {
 			isa = XCConfigurationList;
@@ -670,7 +599,7 @@
 				A975D59D2140586700D4834F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		A9AD70132440ED3B00B9E254 /* Build configuration list for PBXAggregateTarget "MVKShaderConverterTool" */ = {
 			isa = XCConfigurationList;
@@ -679,7 +608,7 @@
 				A9AD70152440ED3B00B9E254 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		A9FEADDC1F3517480010240E /* Build configuration list for PBXAggregateTarget "MoltenVK" */ = {
 			isa = XCConfigurationList;
@@ -688,7 +617,7 @@
 				A9FEADDE1F3517480010240E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};

@@ -31,7 +31,7 @@
       shouldAutocreateTestPlan = "YES">
    </TestAction>
    <LaunchAction
-      buildConfiguration = "Debug"
+      buildConfiguration = "Release"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
@@ -42,6 +42,7 @@
       allowLocationSimulation = "YES">
       <PathRunnable
          runnableDebuggingMode = "0"
+         BundleIdentifier = "com.suyu-emu.suyu"
          FilePath = "/Users/dreaman/Documents/GitHub/suyu/xcodebuild/bin/Debug/suyu.app">
       </PathRunnable>
    </LaunchAction>

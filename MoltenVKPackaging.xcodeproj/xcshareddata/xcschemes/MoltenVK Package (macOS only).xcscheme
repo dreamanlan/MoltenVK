@@ -31,7 +31,7 @@
       </Testables>
    </TestAction>
    <LaunchAction
-      buildConfiguration = "Debug"
+      buildConfiguration = "Release"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       disableMainThreadChecker = "YES"
@@ -41,10 +41,15 @@
       debugDocumentVersioning = "NO"
       debugXPCServices = "NO"
       debugServiceExtension = "internal"
-      enableGPUFrameCaptureMode = "3"
+      enableGPUFrameCaptureMode = "1"
       enableGPUValidationMode = "1"
       allowLocationSimulation = "NO"
       queueDebuggingEnabled = "No">
+      <PathRunnable
+         runnableDebuggingMode = "0"
+         BundleIdentifier = "com.suyu-emu.suyu"
+         FilePath = "/Users/dreaman/Documents/GitHub/suyu/build/bin/suyu.app">
+      </PathRunnable>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
