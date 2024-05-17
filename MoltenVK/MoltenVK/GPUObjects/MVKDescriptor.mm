@@ -380,7 +380,7 @@ void MVKDescriptorSetLayoutBinding::push(MVKCommandEncoder* cmdEncoder,
                 MVKImageView* imageView = (MVKImageView*)imageInfo.imageView;
                 uint8_t planeCount = (imageView) ? imageView->getPlaneCount() : 1;
                 for (uint8_t planeIndex = 0; planeIndex < planeCount; planeIndex++) {
-                    tb.mtlTexture = imageView->getMTLTexture(planeIndex);
+                    tb.mtlTexture = (imageView) ? imageView->getMTLTexture(planeIndex) : nullptr;
                     tb.swizzle = (imageView) ? imageView->getPackedSwizzle() : 0;
                     MVKSampler* sampler;
                     if (_immutableSamplers.empty()) {
