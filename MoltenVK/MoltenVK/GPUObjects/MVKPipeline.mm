@@ -110,7 +110,7 @@ void MVKPipelineLayout::populateShaderConversionConfig(SPIRVToMSLConversionConfi
 	}
 
     // Add resource bindings defined in the descriptor set layouts
-	uint32_t dslCnt = getDescriptorSetCount();
+	auto dslCnt = _descriptorSetLayouts.size();
 	for (uint32_t dslIdx = 0; dslIdx < dslCnt; dslIdx++) {
 		_descriptorSetLayouts[dslIdx]->populateShaderConversionConfig(shaderConfig,
 																	  _dslMTLResourceIndexOffsets[dslIdx],
@@ -126,6 +126,16 @@ bool MVKPipelineLayout::stageUsesPushConstants(MVKShaderStage mvkStage) {
 		}
 	}
 	return false;
+}
+
+std::string MVKPipelineLayout::getLogDescription() {
+	std::stringstream descStr;
+	size_t dslCnt = _descriptorSetLayouts.size();
+	descStr << "VkPipelineLayout " << this << " with " << dslCnt << " descriptor set layouts:";
+	for (uint32_t dslIdx = 0; dslIdx < dslCnt; dslIdx++) {
+		descStr << "\n\t" << dslIdx << ": " << _descriptorSetLayouts[dslIdx];
+	}
+	return descStr.str();
 }
 
 MVKPipelineLayout::MVKPipelineLayout(MVKDevice* device,
@@ -168,13 +178,15 @@ MVKPipelineLayout::MVKPipelineLayout(MVKDevice* device,
 
 		MVKShaderResourceBinding adjstdDSLRezOfsts = _mtlResourceCounts;
 		MVKShaderResourceBinding adjstdDSLRezCnts = pDescSetLayout->_mtlResourceCounts;
-		if (pDescSetLayout->isUsingMetalArgumentBuffer()) {
+		if (pDescSetLayout->isUsingMetalArgumentBuffers()) {
 			adjstdDSLRezOfsts.clearArgumentBufferResources();
 			adjstdDSLRezCnts.clearArgumentBufferResources();
 		}
 		_dslMTLResourceIndexOffsets.push_back(adjstdDSLRezOfsts);
 		_mtlResourceCounts += adjstdDSLRezCnts;
 	}
+
+	MVKLogDebugIf(getMVKConfig().debugMode, "Created %s\n", getLogDescription().c_str());
 }
 
 MVKPipelineLayout::~MVKPipelineLayout() {
@@ -194,22 +206,16 @@ void MVKPipeline::bindPushConstants(MVKCommandEncoder* cmdEncoder) {
 	}
 }
 
-// For each descriptor set, populate the descriptor bindings used by the shader for this stage,
-// and if Metal argument encoders must be dedicated to a pipeline stage, create the encoder here.
+// For each descriptor set, populate the descriptor bindings used by the shader for this stage.
 template<typename CreateInfo>
-void MVKPipeline::addMTLArgumentEncoders(MVKMTLFunction& mvkMTLFunc,
-										 const CreateInfo* pCreateInfo,
-										 SPIRVToMSLConversionConfiguration& shaderConfig,
-										 MVKShaderStage stage) {
-	if ( !isUsingMetalArgumentBuffers() ) { return; }
-
-	bool needMTLArgEnc = isUsingPipelineStageMetalArgumentBuffers();
-	auto mtlFunc = mvkMTLFunc.getMTLFunction();
-	for (uint32_t dsIdx = 0; dsIdx < _descriptorSetCount; dsIdx++) {
-		auto* dsLayout = ((MVKPipelineLayout*)pCreateInfo->layout)->getDescriptorSetLayout(dsIdx);
-		bool descSetIsUsed = dsLayout->populateBindingUse(getDescriptorBindingUse(dsIdx, stage), shaderConfig, stage, dsIdx);
-		if (descSetIsUsed && needMTLArgEnc) {
-			getMTLArgumentEncoder(dsIdx, stage).init([mtlFunc newArgumentEncoderWithBufferIndex: dsIdx]);
+void MVKPipeline::populateDescriptorSetBindingUse(MVKMTLFunction& mvkMTLFunc,
+												  const CreateInfo* pCreateInfo,
+												  SPIRVToMSLConversionConfiguration& shaderConfig,
+												  MVKShaderStage stage) {
+	if (isUsingMetalArgumentBuffers()) {
+		for (uint32_t dsIdx = 0; dsIdx < _descriptorSetCount; dsIdx++) {
+			auto* dsLayout = ((MVKPipelineLayout*)pCreateInfo->layout)->getDescriptorSetLayout(dsIdx);
+			dsLayout->populateBindingUse(getDescriptorBindingUse(dsIdx, stage), shaderConfig, stage, dsIdx);
 		}
 	}
 }
@@ -219,7 +225,7 @@ MVKPipeline::MVKPipeline(MVKDevice* device, MVKPipelineCache* pipelineCache, MVK
 	MVKVulkanAPIDeviceObject(device),
 	_pipelineCache(pipelineCache),
 	_flags(flags),
-	_descriptorSetCount(layout->getDescriptorSetCount()),
+	_descriptorSetCount(uint32_t(layout->_descriptorSetLayouts.size())),
 	_fullImageViewSwizzle(getMVKConfig().fullImageViewSwizzle) {
 
 		// Establish descriptor counts and push constants use.
@@ -507,6 +513,16 @@ MVKGraphicsPipeline::MVKGraphicsPipeline(MVKDevice* device,
 	_outputControlPointCount = reflectData.numControlPoints;
 	mvkSetOrClear(&_tessInfo, _isTessellationPipeline ? pCreateInfo->pTessellationState : nullptr);
 
+	// Handles depth attachment being used as input attachment. However, it does not solve the issue when
+	// the pipeline is created without render pass (dynamic rendering) since we won't be able to know
+	// which resources will be used when rendering. Needs to be done before we do shaders
+	// Potential solution would be to generate 2 pipelines, one with the workaround for the Metal issue
+	// and one without it, and decide at bind time once we know the resources which one to use.
+	if (pCreateInfo->renderPass) {
+		MVKRenderSubpass* subpass = ((MVKRenderPass*)pCreateInfo->renderPass)->getSubpass(pCreateInfo->subpass);
+		_inputAttachmentIsDSAttachment = subpass->isInputAttachmentDepthStencilAttachment();
+	}
+
 	// Render pipeline state. Do this as early as possible, to fail fast if pipeline requires a fail on cache-miss.
 	initMTLRenderPipelineState(pCreateInfo, reflectData, pPipelineFB, pVertexSS, pVertexFB, pTessCtlSS, pTessCtlFB, pTessEvalSS, pTessEvalFB, pFragmentSS, pFragmentFB);
 	if ( !_hasValidMTLPipelineStates ) { return; }
@@ -687,7 +703,6 @@ void MVKGraphicsPipeline::initMTLRenderPipelineState(const VkGraphicsPipelineCre
 	}
 
 	if (isUsingMetalArgumentBuffers()) { _descriptorBindingUse.resize(_descriptorSetCount); }
-	if (isUsingPipelineStageMetalArgumentBuffers()) { _mtlArgumentEncoders.resize(_descriptorSetCount); }
 
 	const char* dumpDir = getMVKConfig().shaderDumpDir;
 	if (dumpDir && *dumpDir) {
@@ -1102,7 +1117,7 @@ bool MVKGraphicsPipeline::addVertexShaderToPipeline(MTLRenderPipelineDescriptor*
 	_needsVertexOutputBuffer = funcRslts.needsOutputBuffer;
 	markIfUsingPhysicalStorageBufferAddressesCapability(funcRslts, kMVKShaderStageVertex);
 
-	addMTLArgumentEncoders(func, pCreateInfo, shaderConfig, kMVKShaderStageVertex);
+	populateDescriptorSetBindingUse(func, pCreateInfo, shaderConfig, kMVKShaderStageVertex);
 
 	if (funcRslts.isRasterizationDisabled) {
 		pFragmentSS = nullptr;
@@ -1176,7 +1191,7 @@ bool MVKGraphicsPipeline::addVertexShaderToPipeline(MTLComputePipelineDescriptor
 		markIfUsingPhysicalStorageBufferAddressesCapability(funcRslts, kMVKShaderStageVertex);
 	}
 
-	addMTLArgumentEncoders(func, pCreateInfo, shaderConfig, kMVKShaderStageVertex);
+	populateDescriptorSetBindingUse(func, pCreateInfo, shaderConfig, kMVKShaderStageVertex);
 
 	// If we need the swizzle buffer and there's no place to put it, we're in serious trouble.
 	if (!verifyImplicitBuffer(_needsVertexSwizzleBuffer, _swizzleBufferIndex, kMVKShaderStageVertex, "swizzle")) {
@@ -1237,7 +1252,7 @@ bool MVKGraphicsPipeline::addTessCtlShaderToPipeline(MTLComputePipelineDescripto
 	_needsTessCtlInputBuffer = funcRslts.needsInputThreadgroupMem;
 	markIfUsingPhysicalStorageBufferAddressesCapability(funcRslts, kMVKShaderStageTessCtl);
 
-	addMTLArgumentEncoders(func, pCreateInfo, shaderConfig, kMVKShaderStageTessCtl);
+	populateDescriptorSetBindingUse(func, pCreateInfo, shaderConfig, kMVKShaderStageTessCtl);
 
 	if (!verifyImplicitBuffer(_needsTessCtlSwizzleBuffer, _swizzleBufferIndex, kMVKShaderStageTessCtl, "swizzle")) {
 		return false;
@@ -1297,7 +1312,7 @@ bool MVKGraphicsPipeline::addTessEvalShaderToPipeline(MTLRenderPipelineDescripto
 	_needsTessEvalDynamicOffsetBuffer = funcRslts.needsDynamicOffsetBuffer;
 	markIfUsingPhysicalStorageBufferAddressesCapability(funcRslts, kMVKShaderStageTessEval);
 
-	addMTLArgumentEncoders(func, pCreateInfo, shaderConfig, kMVKShaderStageTessEval);
+	populateDescriptorSetBindingUse(func, pCreateInfo, shaderConfig, kMVKShaderStageTessEval);
 
 	if (funcRslts.isRasterizationDisabled) {
 		pFragmentSS = nullptr;
@@ -1332,6 +1347,9 @@ bool MVKGraphicsPipeline::addFragmentShaderToPipeline(MTLRenderPipelineDescripto
 		shaderConfig.options.mslOptions.capture_output_to_buffer = false;
 		shaderConfig.options.mslOptions.fixed_subgroup_size = mvkIsAnyFlagEnabled(pFragmentSS->flags, VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT) ? 0 : mtlFeats.maxSubgroupSize;
 		shaderConfig.options.mslOptions.check_discarded_frag_stores = true;
+		/* Enabling makes dEQP-VK.fragment_shader_interlock.basic.discard.image.pixel_ordered.1xaa.no_sample_shading.1024x1024 and similar tests fail. Requires investigation */
+		shaderConfig.options.mslOptions.force_fragment_with_side_effects_execution = false;
+		shaderConfig.options.mslOptions.input_attachment_is_ds_attachment = _inputAttachmentIsDSAttachment;
 		if (mtlFeats.needsSampleDrefLodArrayWorkaround) {
 			shaderConfig.options.mslOptions.sample_dref_lod_array_as_grad = true;
 		}
@@ -1364,7 +1382,7 @@ bool MVKGraphicsPipeline::addFragmentShaderToPipeline(MTLRenderPipelineDescripto
 		_needsFragmentViewRangeBuffer = funcRslts.needsViewRangeBuffer;
 		markIfUsingPhysicalStorageBufferAddressesCapability(funcRslts, kMVKShaderStageFragment);
 
-		addMTLArgumentEncoders(func, pCreateInfo, shaderConfig, kMVKShaderStageFragment);
+		populateDescriptorSetBindingUse(func, pCreateInfo, shaderConfig, kMVKShaderStageFragment);
 
 		if (!verifyImplicitBuffer(_needsFragmentSwizzleBuffer, _swizzleBufferIndex, kMVKShaderStageFragment, "swizzle")) {
 			return false;
@@ -1734,7 +1752,7 @@ void MVKGraphicsPipeline::initShaderConversionConfig(SPIRVToMSLConversionConfigu
 
 	bool useMetalArgBuff = isUsingMetalArgumentBuffers();
 	shaderConfig.options.mslOptions.argument_buffers = useMetalArgBuff;
-	shaderConfig.options.mslOptions.force_active_argument_buffer_resources = useMetalArgBuff;
+	shaderConfig.options.mslOptions.force_active_argument_buffer_resources = false;
 	shaderConfig.options.mslOptions.pad_argument_buffer_resources = useMetalArgBuff;
 	shaderConfig.options.mslOptions.agx_manual_cube_grad_fixup = mtlFeats.needsCubeGradWorkaround;
 
@@ -2078,7 +2096,6 @@ MVKComputePipeline::MVKComputePipeline(MVKDevice* device,
 	_allowsDispatchBase = mvkAreAllFlagsEnabled(pCreateInfo->flags, VK_PIPELINE_CREATE_DISPATCH_BASE_BIT);
 
 	if (isUsingMetalArgumentBuffers()) { _descriptorBindingUse.resize(_descriptorSetCount); }
-	if (isUsingPipelineStageMetalArgumentBuffers()) { _mtlArgumentEncoders.resize(_descriptorSetCount); }
 
 	const VkPipelineCreationFeedbackCreateInfo* pFeedbackInfo = nullptr;
 	for (const auto* next = (VkBaseInStructure*)pCreateInfo->pNext; next; next = next->pNext) {
@@ -2179,7 +2196,7 @@ MVKMTLFunction MVKComputePipeline::getMTLFunction(const VkComputePipelineCreateI
 
 	bool useMetalArgBuff = isUsingMetalArgumentBuffers();
 	shaderConfig.options.mslOptions.argument_buffers = useMetalArgBuff;
-	shaderConfig.options.mslOptions.force_active_argument_buffer_resources = useMetalArgBuff;
+	shaderConfig.options.mslOptions.force_active_argument_buffer_resources = false;
 	shaderConfig.options.mslOptions.pad_argument_buffer_resources = useMetalArgBuff;
 
 #if MVK_MACOS
@@ -2226,7 +2243,7 @@ MVKMTLFunction MVKComputePipeline::getMTLFunction(const VkComputePipelineCreateI
     _needsDispatchBaseBuffer = funcRslts.needsDispatchBaseBuffer;
 	_usesPhysicalStorageBufferAddressesCapability = funcRslts.usesPhysicalStorageBufferAddressesCapability;
 
-	addMTLArgumentEncoders(func, pCreateInfo, shaderConfig, kMVKShaderStageCompute);
+	populateDescriptorSetBindingUse(func, pCreateInfo, shaderConfig, kMVKShaderStageCompute);
 
 	return func;
 }
@@ -2580,6 +2597,8 @@ namespace SPIRV_CROSS_NAMESPACE {
 				opt.force_sample_rate_shading,
 				opt.manual_helper_invocation_updates,
 				opt.check_discarded_frag_stores,
+				opt.force_fragment_with_side_effects_execution,
+				opt.input_attachment_is_ds_attachment,
 				opt.sample_dref_lod_array_as_grad,
 				opt.replace_recursive_inputs,
 				opt.agx_manual_cube_grad_fixup);
