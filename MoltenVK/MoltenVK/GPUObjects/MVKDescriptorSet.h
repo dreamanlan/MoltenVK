@@ -129,7 +129,7 @@ protected:
 	void propagateDebugName() override {}
 	uint32_t getDescriptorCount(uint32_t variableDescriptorCount);
 	uint32_t getDescriptorIndex(uint32_t binding, uint32_t elementIndex = 0) { return getBinding(binding)->getDescriptorIndex(elementIndex); }
-	MVKDescriptorSetLayoutBinding* getBinding(uint32_t binding) { return &_bindings[_bindingToIndex[binding]]; }
+	MVKDescriptorSetLayoutBinding* getBinding(uint32_t binding, uint32_t bindingIndexOffset = 0);
 	uint32_t getBufferSizeBufferArgBuferIndex() { return 0; }
 	id <MTLArgumentEncoder> getMTLArgumentEncoder(uint32_t variableDescriptorCount);
 	uint64_t getMetal3ArgumentBufferEncodedLength(uint32_t variableDescriptorCount);
@@ -140,6 +140,7 @@ protected:
 	MVKShaderResourceBinding _mtlResourceCounts;
 	int32_t _maxBufferIndex = -1;
 	bool _isPushDescriptorLayout = false;
+	bool _canUseMetalArgumentBuffer = true;
 };
 
 
@@ -338,6 +339,9 @@ public:
 	/** Get the total number of entries. */
 	uint32_t getNumberOfEntries() const;
 
+	/** Get the total number of bytes of data requried by this template. */
+	size_t getSize() const { return _size; }
+
 	/** Get the type of this template. */
 	VkDescriptorUpdateTemplateType getType() const;
 
@@ -353,9 +357,10 @@ public:
 protected:
 	void propagateDebugName() override {}
 
+	MVKSmallVector<VkDescriptorUpdateTemplateEntry, 1> _entries;
+	size_t _size = 0;
 	VkPipelineBindPoint _pipelineBindPoint;
 	VkDescriptorUpdateTemplateType _type;
-	MVKSmallVector<VkDescriptorUpdateTemplateEntry, 1> _entries;
 };
 
 #pragma mark -

@@ -62,7 +62,7 @@ MVKQueueFamily::~MVKQueueFamily() {
 #pragma mark -
 #pragma mark MVKQueue
 
-void MVKQueue::propagateDebugName() { setLabelIfNotNil(_mtlQueue, _debugName); }
+void MVKQueue::propagateDebugName() { setMetalObjectLabel(_mtlQueue, _debugName); }
 
 
 #pragma mark Queue submissions
@@ -85,7 +85,16 @@ VkResult MVKQueue::submit(MVKQueueSubmission* qSubmit) {
 	// The submissions will ensure a misconfiguration will be safe to execute.
 	VkResult rslt = qSubmit->getConfigurationResult();
 	if (_execQueue) {
-		dispatch_async(_execQueue, ^{ execute(qSubmit); } );
+		std::unique_lock lock(_execQueueMutex);
+		_execQueueJobCount++;
+
+		dispatch_async(_execQueue, ^{
+			execute(qSubmit);
+
+			std::unique_lock execLock(_execQueueMutex);
+			if (!--_execQueueJobCount)
+				_execQueueConditionVariable.notify_all();
+		} );
 	} else {
 		rslt = execute(qSubmit);
 	}
@@ -145,6 +154,12 @@ VkResult MVKQueue::waitIdle(MVKCommandUse cmdUse) {
 	VkResult rslt = _device->getConfigurationResult();
 	if (rslt != VK_SUCCESS) { return rslt; }
 
+	if (_execQueue) {
+		std::unique_lock lock(_execQueueMutex);
+		while (_execQueueJobCount)
+			_execQueueConditionVariable.wait(lock);
+	}
+
 	@autoreleasepool {
 		auto* mtlCmdBuff = getMTLCommandBuffer(cmdUse);
 		[mtlCmdBuff commit];
@@ -175,7 +190,7 @@ id<MTLCommandBuffer> MVKQueue::getMTLCommandBuffer(MVKCommandUse cmdUse, bool re
 	}
 	addPerformanceInterval(getPerformanceStats().queue.retrieveMTLCommandBuffer, startTime);
 	NSString* mtlCmdBuffLabel = getMTLCommandBufferLabel(cmdUse);
-	setLabelIfNotNil(mtlCmdBuff, mtlCmdBuffLabel);
+	setMetalObjectLabel(mtlCmdBuff, mtlCmdBuffLabel);
 	[mtlCmdBuff addCompletedHandler: ^(id<MTLCommandBuffer> mtlCB) { handleMTLCommandBufferError(mtlCB); }];
 
 	if ( !mtlCmdBuff ) { reportError(VK_ERROR_OUT_OF_POOL_MEMORY, "%s could not be acquired.", mtlCmdBuffLabel.UTF8String); }
@@ -249,10 +264,15 @@ void MVKQueue::handleMTLCommandBufferError(id<MTLCommandBuffer> mtlCmdBuff) {
 			vkErr = VK_ERROR_OUT_OF_DEVICE_MEMORY;
 			break;
 	}
-	reportError(vkErr, "MTLCommandBuffer \"%s\" execution failed (code %li): %s",
-				mtlCmdBuff.label ? mtlCmdBuff.label.UTF8String : "",
-				mtlCmdBuff.error.code, mtlCmdBuff.error.localizedDescription.UTF8String);
-	if (markDeviceLoss) { getDevice()->markLost(markPhysicalDeviceLoss); }
+	if (markDeviceLoss) {
+		getDevice()->stopAutoGPUCapture(MVK_CONFIG_AUTO_GPU_CAPTURE_SCOPE_DEVICE);
+		getDevice()->markLost(markPhysicalDeviceLoss);
+	}
+	reportResult(vkErr, (markDeviceLoss ? MVK_CONFIG_LOG_LEVEL_ERROR : MVK_CONFIG_LOG_LEVEL_WARNING),
+				 "%s VkDevice after MTLCommandBuffer \"%s\" execution failed (code %li): %s",
+				 (markDeviceLoss ? "Lost" : "Resumed"),
+				 (mtlCmdBuff.label ? mtlCmdBuff.label.UTF8String : ""),
+				 mtlCmdBuff.error.code, mtlCmdBuff.error.localizedDescription.UTF8String);
 
 #if MVK_XCODE_12
 	if (&MTLCommandBufferEncoderInfoErrorKey != nullptr) {

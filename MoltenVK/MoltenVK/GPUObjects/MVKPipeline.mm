@@ -851,7 +851,7 @@ MTLRenderPipelineDescriptor* MVKGraphicsPipeline::newMTLRenderPipelineDescriptor
 	// Metal does not allow the name of the pipeline to be changed after it has been created,
 	// and we need to create the Metal pipeline immediately to provide error feedback to app.
 	// The best we can do at this point is set the pipeline name from the layout.
-	setLabelIfNotNil(plDesc, ((MVKPipelineLayout*)pCreateInfo->layout)->getDebugName());
+	setMetalObjectLabel(plDesc, ((MVKPipelineLayout*)pCreateInfo->layout)->getDebugName());
 
 	return plDesc;
 }
@@ -893,7 +893,7 @@ MTLComputePipelineDescriptor* MVKGraphicsPipeline::newMTLTessVertexStageDescript
 	// Metal does not allow the name of the pipeline to be changed after it has been created,
 	// and we need to create the Metal pipeline immediately to provide error feedback to app.
 	// The best we can do at this point is set the pipeline name from the layout.
-	setLabelIfNotNil(plDesc, ((MVKPipelineLayout*)pCreateInfo->layout)->getDebugName());
+	setMetalObjectLabel(plDesc, ((MVKPipelineLayout*)pCreateInfo->layout)->getDebugName());
 
 	return plDesc;
 }
@@ -1035,7 +1035,7 @@ MTLComputePipelineDescriptor* MVKGraphicsPipeline::newMTLTessControlStageDescrip
 	// Metal does not allow the name of the pipeline to be changed after it has been created,
 	// and we need to create the Metal pipeline immediately to provide error feedback to app.
 	// The best we can do at this point is set the pipeline name from the layout.
-	setLabelIfNotNil(plDesc, ((MVKPipelineLayout*)pCreateInfo->layout)->getDebugName());
+	setMetalObjectLabel(plDesc, ((MVKPipelineLayout*)pCreateInfo->layout)->getDebugName());
 
 	return plDesc;
 }
@@ -1769,6 +1769,7 @@ void MVKGraphicsPipeline::initShaderConversionConfig(SPIRVToMSLConversionConfigu
 	shaderConfig.options.mslOptions.argument_buffers = useMetalArgBuff;
 	shaderConfig.options.mslOptions.force_active_argument_buffer_resources = false;
 	shaderConfig.options.mslOptions.pad_argument_buffer_resources = useMetalArgBuff;
+	shaderConfig.options.mslOptions.argument_buffers_tier = (SPIRV_CROSS_NAMESPACE::CompilerMSL::Options::ArgumentBuffersTier)getMetalFeatures().argumentBuffersTier;
 	shaderConfig.options.mslOptions.agx_manual_cube_grad_fixup = mtlFeats.needsCubeGradWorkaround;
 
     MVKPipelineLayout* layout = (MVKPipelineLayout*)pCreateInfo->layout;
@@ -2158,7 +2159,7 @@ MVKComputePipeline::MVKComputePipeline(MVKDevice* device,
 		// Metal does not allow the name of the pipeline to be changed after it has been created,
 		// and we need to create the Metal pipeline immediately to provide error feedback to app.
 		// The best we can do at this point is set the pipeline name from the layout.
-		setLabelIfNotNil(plDesc, ((MVKPipelineLayout*)pCreateInfo->layout)->getDebugName());
+		setMetalObjectLabel(plDesc, ((MVKPipelineLayout*)pCreateInfo->layout)->getDebugName());
 
 		MVKComputePipelineCompiler* plc = new MVKComputePipelineCompiler(this);
 		_mtlPipelineState = plc->newMTLComputePipelineState(plDesc);	// retained
@@ -2213,6 +2214,7 @@ MVKMTLFunction MVKComputePipeline::getMTLFunction(const VkComputePipelineCreateI
 	shaderConfig.options.mslOptions.argument_buffers = useMetalArgBuff;
 	shaderConfig.options.mslOptions.force_active_argument_buffer_resources = false;
 	shaderConfig.options.mslOptions.pad_argument_buffer_resources = useMetalArgBuff;
+	shaderConfig.options.mslOptions.argument_buffers_tier = (SPIRV_CROSS_NAMESPACE::CompilerMSL::Options::ArgumentBuffersTier)getMetalFeatures().argumentBuffersTier;
 
 #if MVK_MACOS
     shaderConfig.options.mslOptions.emulate_subgroups = !mtlFeats.simdPermute;
@@ -2600,6 +2602,7 @@ namespace SPIRV_CROSS_NAMESPACE {
 				opt.texture_buffer_native,
 				opt.force_active_argument_buffer_resources,
 				opt.pad_argument_buffer_resources,
+				opt.argument_buffers_tier,
 				opt.force_native_arrays,
 				opt.enable_clip_distance_user_varying,
 				opt.multi_patch_workgroup,

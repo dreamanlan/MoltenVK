@@ -299,7 +299,7 @@ bool MVKImagePlane::overlaps(VkSubresourceLayout& imgLayout, VkDeviceSize offset
 }
 
 void MVKImagePlane::propagateDebugName() {
-    setLabelIfNotNil(_image->_planes[_planeIndex]->_mtlTexture, _image->_debugName);
+	_image->setMetalObjectLabel(_image->_planes[_planeIndex]->_mtlTexture, _image->_debugName);
 }
 
 MVKImageMemoryBinding* MVKImagePlane::getMemoryBinding() const {
@@ -463,7 +463,7 @@ void MVKImageMemoryBinding::propagateDebugName() {
         _image->_planes[planeIndex]->propagateDebugName();
     }
     if (_ownsTexelBuffer) {
-        setLabelIfNotNil(_mtlTexelBuffer, _image->_debugName);
+        setMetalObjectLabel(_mtlTexelBuffer, _image->_debugName);
     }
 }
 
@@ -1768,7 +1768,7 @@ MVKPeerSwapchainImage::MVKPeerSwapchainImage(MVKDevice* device,
 
 MVKVulkanAPIObject* MVKImageViewPlane::getVulkanAPIObject() { return _imageView; }
 
-void MVKImageViewPlane::propagateDebugName() { setLabelIfNotNil(_mtlTexture, _imageView->_debugName); }
+void MVKImageViewPlane::propagateDebugName() { _imageView->setMetalObjectLabel(_mtlTexture, _imageView->_debugName); }
 
 
 #pragma mark Metal
@@ -2194,6 +2194,8 @@ void MVKImageView::populateMTLRenderPassAttachmentDescriptorResolve(MTLRenderPas
 
 MVKImageView::MVKImageView(MVKDevice* device, const VkImageViewCreateInfo* pCreateInfo) : MVKVulkanAPIDeviceObject(device) {
 	_image = (MVKImage*)pCreateInfo->image;
+	_image->retain();		// Ensure image sticks around while this image view is in flight.
+
     _mtlTextureType = mvkMTLTextureTypeFromVkImageViewType(pCreateInfo->viewType,
 														   _image->getSampleCount() != VK_SAMPLE_COUNT_1_BIT);
 
@@ -2306,6 +2308,7 @@ MVKImageView::MVKImageView(MVKDevice* device, const VkImageViewCreateInfo* pCrea
 // Memory detached in destructor too, as a fail-safe.
 MVKImageView::~MVKImageView() {
 	detachMemory();
+	_image->release();
 }
 
 // Overridden to detach from the resource memory when the app destroys this object.

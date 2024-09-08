@@ -16,16 +16,23 @@ Copyright (c) 2015-2024 [The Brenwill Workshop Ltd.](http://www.brenwill.com)
 MoltenVK 1.2.11
 ---------------
 
-Released TBD
+Released 2024-09-24
 
 - Support dynamically allocating descriptors when pool is exhausted.
 - Deprecate `MVKConfiguration::preallocateDescriptors` and `MVK_CONFIG_PREALLOCATE_DESCRIPTORS` environment variable.
 - `vkAllocateDescriptorSets()`: Per Vulkan spec, if any descriptor set allocation 
   fails, populate all descriptor set pointers with `VK_NULL_HANDLE`. In addition, 
   return `VK_ERROR_FRAGMENTED_POOL` if failure was due to pool fragmentation.
+- `vkUpdateDescriptorSets()`: Per Vulkan spec, allow write or copy beyond the 
+  end of a descriptor binding count, including inline uniform block descriptors.
+- Update `VkFormat` capabilities based on latest Metal docs.
 - Fix rendering issue with render pass that immediately follows a kernel dispatch.
+- Fix race condition when `VkImage` destroyed while used by descriptor.
+- Fix crash in `vkCmdPushDescriptorSetWithTemplateKHR()` when entries in 
+  `VkDescriptorUpdateTemplateCreateInfo` are not sorted by offset.
 - Ensure all MoltenVK config info set by `VK_EXT_layer_settings` is used.
 - Move primitive-restart-disabled warning from renderpass to pipeline creation, to reduce voluminous log noise.
+- iOS: Support storage images in _Metal_ argument buffers.
 
 
 MoltenVK 1.2.10
