@@ -1593,10 +1593,8 @@ VkResult MVKPhysicalDevice::getSurfaceFormats(MVKSurface* surface,
 	addSurfFmt(BGRA8Unorm);
 	addSurfFmt(BGRA8Unorm_sRGB);
 	addSurfFmt(RGBA16Float);
-#if MVK_MACOS
 	addSurfFmt(RGB10A2Unorm);
 	addSurfFmt(BGR10A2Unorm);
-#endif
 #if MVK_APPLE_SILICON
 	addSurfFmt(BGRA10_XR);
 	addSurfFmt(BGRA10_XR_sRGB);
@@ -3288,7 +3286,7 @@ uint64_t MVKPhysicalDevice::getRecommendedMaxWorkingSetSize() {
 }
 
 // If possible, retrieve from the MTLDevice, otherwise use the current memory used by this process.
-uint64_t MVKPhysicalDevice::getCurrentAllocatedSize() {
+size_t MVKPhysicalDevice::getCurrentAllocatedSize() {
 	if ( [_mtlDevice respondsToSelector: @selector(currentAllocatedSize)] ) {
 		return _mtlDevice.currentAllocatedSize;
 	}

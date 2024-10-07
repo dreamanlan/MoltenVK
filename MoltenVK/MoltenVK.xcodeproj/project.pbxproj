@@ -1605,6 +1605,60 @@
 			};
 			name = Release;
 		};
+		A9F4D9B02B8EB2FC004AD576 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_DYLIB_INSTALL_NAME = "@rpath/${PRODUCT_NAME}.framework/${PRODUCT_NAME}";
+				OTHER_LDFLAGS = (
+					"-ld_classic",
+					"-all_load",
+					"-w",
+				);
+				SDKROOT = appletvos;
+			};
+			name = Debug;
+		};
+		A9F4D9B12B8EB2FC004AD576 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_DYLIB_INSTALL_NAME = "@rpath/${PRODUCT_NAME}.framework/${PRODUCT_NAME}";
+				OTHER_LDFLAGS = (
+					"-ld_classic",
+					"-all_load",
+					"-w",
+				);
+				SDKROOT = appletvos;
+			};
+			name = Release;
+		};
+		A9F4D9CC2B8EB6DC004AD576 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_DYLIB_INSTALL_NAME = "@rpath/${PRODUCT_NAME}.framework/${PRODUCT_NAME}";
+				OTHER_LDFLAGS = (
+					"-all_load",
+					"-w",
+				);
+				SDKROOT = xros;
+			};
+			name = Debug;
+		};
+		A9F4D9CD2B8EB6DC004AD576 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_DYLIB_INSTALL_NAME = "@rpath/${PRODUCT_NAME}.framework/${PRODUCT_NAME}";
+				OTHER_LDFLAGS = (
+					"-all_load",
+					"-w",
+				);
+				SDKROOT = xros;
+			};
+			name = Release;
+		};
 		A9F4D9EB2B8EC112004AD576 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1656,7 +1710,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1.2.11;
+				CURRENT_PROJECT_VERSION = 1.2.12;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1728,7 +1782,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
-				CURRENT_PROJECT_VERSION = 1.2.11;
+				CURRENT_PROJECT_VERSION = 1.2.12;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				ENABLE_NS_ASSERTIONS = NO;
