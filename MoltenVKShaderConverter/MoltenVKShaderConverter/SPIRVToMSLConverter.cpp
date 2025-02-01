@@ -272,6 +272,35 @@ MVK_PUBLIC_SYMBOL bool SPIRVToMSLConverter::convert(SPIRVToMSLConversionConfigur
 //	spvFile.close();
 
 	if (shouldLogSPIRV) { logSPIRV(conversionResult.resultLog, "Converting"); }
+    
+    // To check GLSL conversion
+    shouldLogGLSL = true;
+    if (shouldLogGLSL) {
+        CompilerGLSL* pGLSLCompiler = nullptr;
+
+#ifndef SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
+        try {
+#endif
+            pGLSLCompiler = new CompilerGLSL(_spirv);
+            auto options = pGLSLCompiler->get_common_options();
+            options.vulkan_semantics = true;
+            options.separate_shader_objects = true;
+            pGLSLCompiler->set_common_options(options);
+            string glsl = pGLSLCompiler->compile();
+            logSource(conversionResult.resultLog, glsl, "GLSL", "Estimated original");
+#ifndef SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
+        } catch (CompilerError& ex) {
+            string errMsg("Original GLSL extraction error: ");
+            errMsg += ex.what();
+            logMsg(conversionResult.resultLog, errMsg.data());
+            if (pGLSLCompiler) {
+                string glsl = pGLSLCompiler->get_partial_source();
+                logSource(conversionResult.resultLog, glsl, "GLSL", "Partially converted");
+            }
+        }
+#endif
+        delete pGLSLCompiler;
+    }
 
 	CompilerMSL* pMSLCompiler = nullptr;
 	bool wasConverted = true;
@@ -403,34 +432,6 @@ MVK_PUBLIC_SYMBOL bool SPIRVToMSLConverter::convert(SPIRVToMSLConversionConfigur
 	}
 
 	delete pMSLCompiler;
-
-    // To check GLSL conversion
-    if (shouldLogGLSL) {
-		CompilerGLSL* pGLSLCompiler = nullptr;
-
-#ifndef SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
-		try {
-#endif
-			pGLSLCompiler = new CompilerGLSL(_spirv);
-			auto options = pGLSLCompiler->get_common_options();
-			options.vulkan_semantics = true;
-			options.separate_shader_objects = true;
-			pGLSLCompiler->set_common_options(options);
-			string glsl = pGLSLCompiler->compile();
-            logSource(conversionResult.resultLog, glsl, "GLSL", "Estimated original");
-#ifndef SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
-        } catch (CompilerError& ex) {
-            string errMsg("Original GLSL extraction error: ");
-            errMsg += ex.what();
-            logMsg(conversionResult.resultLog, errMsg.data());
-			if (pGLSLCompiler) {
-				string glsl = pGLSLCompiler->get_partial_source();
-				logSource(conversionResult.resultLog, glsl, "GLSL", "Partially converted");
-			}
-        }
-#endif
-		delete pGLSLCompiler;
-	}
 
 	return wasConverted;
 }
