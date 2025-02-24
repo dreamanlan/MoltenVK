@@ -252,6 +252,8 @@ In addition to core *Vulkan* functionality, **MoltenVK**  also supports the foll
 - `VK_KHR_get_physical_device_properties2`
 - `VK_KHR_get_surface_capabilities2`
 - `VK_KHR_imageless_framebuffer`
+- `VK_EXT_image_2d_view_of_3d`
+  - *Requires MVK_CONFIG_USE_MTLHEAP to be enabled.*
 - `VK_KHR_image_format_list`
 - `VK_KHR_incremental_present`
 - `VK_KHR_maintenance1`
@@ -284,6 +286,7 @@ In addition to core *Vulkan* functionality, **MoltenVK**  also supports the foll
 - `VK_KHR_uniform_buffer_standard_layout`
 - `VK_KHR_variable_pointers`
 - `VK_KHR_vertex_attribute_divisor`
+- `VK_KHR_zero_initialize_workgroup_memory`
 - `VK_EXT_4444_formats`
   - *Requires 16-bit formats and either native texture swizzling or manual swizzling to be enabled.*
 - `VK_EXT_buffer_device_address`
