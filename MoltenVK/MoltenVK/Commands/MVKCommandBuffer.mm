@@ -479,6 +479,7 @@ void MVKCommandEncoder::beginRenderpass(MVKCommand* passCmd,
 										MVKArrayRef<VkClearValue> clearValues,
 										MVKArrayRef<MVKImageView*> attachments,
 										MVKCommandUse cmdUse) {
+
 	_pEncodingContext->setRenderingContext(renderPass, framebuffer);
 	_renderArea = renderArea;
 	_isRenderingEntireAttachment = (mvkVkOffset2DsAreEqual(_renderArea.offset, {0,0}) &&
@@ -702,6 +703,9 @@ void MVKCommandEncoder::encodeBarrierUpdates() {
 void MVKCommandEncoder::beginMetalRenderPass(MVKCommandUse cmdUse) {
 
     endCurrentMetalEncoding();
+    auto* p = getSubpass();
+    if (!p)
+        return;
 
 	bool isRestart = cmdUse == kMVKCommandUseRestartSubpass;
     MTLRenderPassDescriptor* mtlRPDesc = [MTLRenderPassDescriptor renderPassDescriptor];
@@ -795,13 +799,24 @@ void MVKCommandEncoder::restartMetalRenderPassIfNeeded() {
 }
 
 void MVKCommandEncoder::encodeStoreActions(bool storeOverride) {
-	getSubpass()->encodeStoreActions(this,
-									 _isRenderingEntireAttachment,
-									 _attachments.contents(),
-									 storeOverride);
+    auto* p = getSubpass();
+    if (p) {
+        p->encodeStoreActions(this,
+                              _isRenderingEntireAttachment,
+                              _attachments.contents(),
+                              storeOverride);
+    }
 }
 
-MVKRenderSubpass* MVKCommandEncoder::getSubpass() { return _pEncodingContext->getRenderPass()->getSubpass(_renderSubpassIndex); }
+MVKRenderSubpass* MVKCommandEncoder::getSubpass() {
+    auto* p = _pEncodingContext->getRenderPass();
+    if (p) {
+        return p->getSubpass(_renderSubpassIndex);
+    }
+    else {
+        return nullptr;
+    }
+}
 
 // Returns a name for use as a MTLRenderCommandEncoder label
 NSString* MVKCommandEncoder::getMTLRenderCommandEncoderName(MVKCommandUse cmdUse) {
