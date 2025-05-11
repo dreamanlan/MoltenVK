@@ -1,7 +1,7 @@
 /*
  * MVKQueue.mm
  *
- * Copyright (c) 2015-2024 The Brenwill Workshop Ltd. (http://www.brenwill.com)
+ * Copyright (c) 2015-2025 The Brenwill Workshop Ltd. (http://www.brenwill.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -304,12 +304,11 @@ void MVKQueue::handleMTLCommandBufferError(id<MTLCommandBuffer> mtlCmdBuff) {
 
 #pragma mark Construction
 
-#define MVK_DISPATCH_QUEUE_QOS_CLASS		QOS_CLASS_USER_INITIATED
-
-MVKQueue::MVKQueue(MVKDevice* device, MVKQueueFamily* queueFamily, uint32_t index, float priority) : MVKDeviceTrackingMixin(device) {
+MVKQueue::MVKQueue(MVKDevice* device, MVKQueueFamily* queueFamily, uint32_t index, float priority, VkQueueGlobalPriority globalPriority) : MVKDeviceTrackingMixin(device) {
 	_queueFamily = queueFamily;
 	_index = index;
 	_priority = priority;
+	_globalPriority = globalPriority;
 
 	initName();
 	initExecQueue();
@@ -327,7 +326,19 @@ void MVKQueue::initExecQueue() {
 	_execQueue = nil;
 	if ( !getMVKConfig().synchronousQueueSubmits ) {
 		// Determine the dispatch queue priority
-		dispatch_qos_class_t dqQOS = MVK_DISPATCH_QUEUE_QOS_CLASS;
+		dispatch_qos_class_t dqQOS;
+		switch (_globalPriority) {
+			case VK_QUEUE_GLOBAL_PRIORITY_LOW:
+				dqQOS = QOS_CLASS_UTILITY;
+				break;
+			case VK_QUEUE_GLOBAL_PRIORITY_HIGH:
+				dqQOS = QOS_CLASS_USER_INTERACTIVE;
+				break;
+			case VK_QUEUE_GLOBAL_PRIORITY_MEDIUM:
+			default: // Fall back to default (medium)
+				dqQOS = QOS_CLASS_USER_INITIATED;
+				break;
+		}
 		int dqPriority = (1.0 - _priority) * QOS_MIN_RELATIVE_PRIORITY;
 		dispatch_queue_attr_t dqAttr = dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, dqQOS, dqPriority);
 
@@ -777,10 +788,14 @@ MVKQueuePresentSurfaceSubmission::MVKQueuePresentSurfaceSubmission(MVKQueue* que
 	const VkSwapchainPresentFenceInfoEXT* pPresentFenceInfo = nullptr;
 	const VkSwapchainPresentModeInfoEXT* pPresentModeInfo = nullptr;
 	const VkPresentRegionsKHR* pPresentRegions = nullptr;
+	const VkPresentIdKHR* pPresentId = nullptr;
 	for (auto* next = (const VkBaseInStructure*)pPresentInfo->pNext; next; next = next->pNext) {
 		switch (next->sType) {
 			case VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR:
 				pPresentRegions = (const VkPresentRegionsKHR*) next;
+				break;
+			case VK_STRUCTURE_TYPE_PRESENT_ID_KHR:
+				pPresentId = (const VkPresentIdKHR*) next;
 				break;
 			case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT:
 				pPresentFenceInfo = (const VkSwapchainPresentFenceInfoEXT*) next;
@@ -817,6 +832,10 @@ MVKQueuePresentSurfaceSubmission::MVKQueuePresentSurfaceSubmission(MVKQueue* que
 	if (pPresentRegions) {
 		pRegions = pPresentRegions->pRegions;
 	}
+	const uint64_t* pPresentIds = nullptr;
+	if (pPresentId) {
+		pPresentIds = pPresentId->pPresentIds;
+	}
 
 	VkResult* pSCRslts = pPresentInfo->pResults;
 	_presentInfo.reserve(scCnt);
@@ -827,8 +846,9 @@ MVKQueuePresentSurfaceSubmission::MVKQueuePresentSurfaceSubmission(MVKQueue* que
 		presentInfo.presentableImage = mvkSC->getPresentableImage(pPresentInfo->pImageIndices[scIdx]);
 		presentInfo.presentMode = pPresentModes ? pPresentModes[scIdx] : VK_PRESENT_MODE_MAX_ENUM_KHR;
 		presentInfo.fence = pFences ? (MVKFence*)pFences[scIdx] : nullptr;
+		presentInfo.presentId = pPresentIds ? pPresentIds[scIdx] : 0;
 		if (pPresentTimes) {
-			presentInfo.presentID = pPresentTimes[scIdx].presentID;
+			presentInfo.presentIDGoogle = pPresentTimes[scIdx].presentID;
 			presentInfo.desiredPresentTime = pPresentTimes[scIdx].desiredPresentTime;
 		}
 		mvkSC->setLayerNeedsDisplay(pRegions ? &pRegions[scIdx] : nullptr);

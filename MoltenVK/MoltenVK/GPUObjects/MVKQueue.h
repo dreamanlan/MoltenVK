@@ -1,7 +1,7 @@
 /*
  * MVKQueue.h
  *
- * Copyright (c) 2015-2024 The Brenwill Workshop Ltd. (http://www.brenwill.com)
+ * Copyright (c) 2015-2025 The Brenwill Workshop Ltd. (http://www.brenwill.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ public:
 #pragma mark Construction
 	
 	/** Constructs an instance for the device and queue family. */
-	MVKQueue(MVKDevice* device, MVKQueueFamily* queueFamily, uint32_t index, float priority);
+	MVKQueue(MVKDevice* device, MVKQueueFamily* queueFamily, uint32_t index, float priority, VkQueueGlobalPriority globalPriority);
 
 	~MVKQueue() override;
 
@@ -162,6 +162,7 @@ protected:
 	NSString* _mtlCmdBuffLabelCopyImageToMemory = nil;
 	MVKGPUCaptureScope* _submissionCaptureScope = nil;
 	float _priority;
+	VkQueueGlobalPriority _globalPriority;
 	uint32_t _index;
 };
 

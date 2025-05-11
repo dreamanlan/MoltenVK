@@ -1,7 +1,7 @@
 /*
  * MVKBuffer.mm
  *
- * Copyright (c) 2015-2024 The Brenwill Workshop Ltd. (http://www.brenwill.com)
+ * Copyright (c) 2015-2025 The Brenwill Workshop Ltd. (http://www.brenwill.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ VkResult MVKBuffer::getMemoryRequirements(VkMemoryRequirements* pMemoryRequireme
 	return VK_SUCCESS;
 }
 
-VkResult MVKBuffer::getMemoryRequirements(const void*, VkMemoryRequirements2* pMemoryRequirements) {
+VkResult MVKBuffer::getMemoryRequirements(VkMemoryRequirements2* pMemoryRequirements) {
 	pMemoryRequirements->sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
 	getMemoryRequirements(&pMemoryRequirements->memoryRequirements);
 	for (auto* next = (VkBaseOutStructure*)pMemoryRequirements->pNext; next; next = next->pNext) {
@@ -85,8 +85,8 @@ VkResult MVKBuffer::bindDeviceMemory(MVKDeviceMemory* mvkMem, VkDeviceSize memOf
 		_isHostCoherentTexelBuffer = (!isUnifiedMemoryGPU() &&
 									  !getMetalFeatures().sharedLinearTextures &&
 									  _deviceMemory->isMemoryHostCoherent() &&
-									  mvkIsAnyFlagEnabled(_usage, (VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT |
-																   VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)));
+									  mvkIsAnyFlagEnabled(_usage, (VK_BUFFER_USAGE_2_UNIFORM_TEXEL_BUFFER_BIT |
+																   VK_BUFFER_USAGE_2_STORAGE_TEXEL_BUFFER_BIT)));
 	}
 #endif
 
@@ -96,7 +96,19 @@ VkResult MVKBuffer::bindDeviceMemory(MVKDeviceMemory* mvkMem, VkDeviceSize memOf
 }
 
 VkResult MVKBuffer::bindDeviceMemory2(const VkBindBufferMemoryInfo* pBindInfo) {
-	return bindDeviceMemory((MVKDeviceMemory*)pBindInfo->memory, pBindInfo->memoryOffset);
+	VkResult res = bindDeviceMemory((MVKDeviceMemory*)pBindInfo->memory, pBindInfo->memoryOffset);
+	for (const auto* next = (const VkBaseInStructure*)pBindInfo->pNext; next; next = next->pNext) {
+		switch (next->sType) {
+			case VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS: {
+				auto* pBindMemoryStatus = (const VkBindMemoryStatus*)next;
+				*(pBindMemoryStatus->pResult) = res;
+				break;
+			}
+			default:
+				break;
+		}
+	}
+	return res;
 }
 
 void MVKBuffer::applyMemoryBarrier(MVKPipelineBarrier& barrier,
@@ -223,6 +235,16 @@ MVKBuffer::MVKBuffer(MVKDevice* device, const VkBufferCreateInfo* pCreateInfo) :
     _byteAlignment = getMetalFeatures().mtlBufferAlignment;
     _byteCount = pCreateInfo->size;
 
+	for (const auto* next = (VkBaseInStructure*)pCreateInfo->pNext; next; next = next->pNext) {
+		switch (next->sType) {
+			case VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO:
+				_usage |= ((VkBufferUsageFlags2CreateInfo*)next)->usage;
+				break;
+			default:
+				break;
+		}
+	}
+
 	for (const auto* next = (const VkBaseInStructure*)pCreateInfo->pNext; next; next = next->pNext) {
 		switch (next->sType) {
 			case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO: {
@@ -301,7 +323,7 @@ id<MTLTexture> MVKBufferView::getMTLTexture() {
 		if (_mtlTexture) { return _mtlTexture; }
 
         MTLTextureUsage usage = MTLTextureUsageShaderRead;
-        if ( mvkIsAnyFlagEnabled(_buffer->getUsage(), VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) ) {
+        if ( mvkIsAnyFlagEnabled(_usage, VK_BUFFER_USAGE_2_STORAGE_TEXEL_BUFFER_BIT) ) {
 			usage |= MTLTextureUsageShaderWrite;
 #if MVK_XCODE_15
 			if (getMetalFeatures().nativeTextureAtomics && (_mtlPixelFormat == MTLPixelFormatR32Sint || _mtlPixelFormat == MTLPixelFormatR32Uint))
@@ -352,6 +374,18 @@ MVKBufferView::MVKBufferView(MVKDevice* device, const VkBufferViewCreateInfo* pC
     VkExtent2D fmtBlockSize = pixFmts->getBlockTexelSize(pCreateInfo->format);  // Pixel size of format
     size_t bytesPerBlock = pixFmts->getBytesPerBlock(pCreateInfo->format);
 	_mtlTexture = nil;
+
+	_usage = _buffer->getUsage();
+	for (const auto* next = (VkBaseInStructure*)pCreateInfo->pNext; next; next = next->pNext) {
+		switch (next->sType) {
+			case VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO:
+				// Buffer view usage should be a subset of the buffer usage.
+				_usage &= ((VkBufferUsageFlags2CreateInfo*)next)->usage;
+				break;
+			default:
+				break;
+		}
+	}
 
     // Layout texture as a 1D array of texel blocks (which are texels for non-compressed textures) that covers the bytes
     VkDeviceSize byteCount = pCreateInfo->range;

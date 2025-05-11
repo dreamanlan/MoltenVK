@@ -1,7 +1,7 @@
 /*
  * SPIRVToMSLConverter.cpp
  *
- * Copyright (c) 2015-2024 The Brenwill Workshop Ltd. (http://www.brenwill.com)
+ * Copyright (c) 2015-2025 The Brenwill Workshop Ltd. (http://www.brenwill.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -505,6 +505,21 @@ void SPIRVToMSLConverter::logSource(string& log, string& src, const char* srcLan
     log += "\n\n";
 }
 
+// Extracts the workgroup dimension from either the LocalSizeId, LocalSize, or WorkgroupSize Builtin.
+// Although LocalSizeId is the modern mechanism, the Builtin takes precedence if it is present.
+static void getWorkgroupSize(Compiler* pCompiler, SPIREntryPoint& spvEP, uint32_t& x, uint32_t& y, uint32_t& z) {
+	auto& wgSz = spvEP.workgroup_size;
+	if (spvEP.flags.get(ExecutionModeLocalSizeId) && !wgSz.constant) {
+		x = wgSz.id_x ? pCompiler->get_constant(wgSz.id_x).scalar() : 0;
+		y = wgSz.id_y ? pCompiler->get_constant(wgSz.id_y).scalar() : 0;
+		z = wgSz.id_z ? pCompiler->get_constant(wgSz.id_z).scalar() : 0;
+	} else {
+		x = wgSz.x;
+		y = wgSz.y;
+		z = wgSz.z;
+	}
+}
+
 void SPIRVToMSLConverter::populateWorkgroupDimension(SPIRVWorkgroupSizeDimension& wgDim,
 													 uint32_t size,
 													 SpecializationConstant& spvSpecConst) {
@@ -534,13 +549,16 @@ void SPIRVToMSLConverter::populateEntryPoint(Compiler* pCompiler,
 	entryPoint.mtlFunctionName = spvEP.name;
 	entryPoint.supportsFastMath = !spvEP.flags.get(ExecutionModeSignedZeroInfNanPreserve);
 
+	uint32_t x, y, z;
+	getWorkgroupSize(pCompiler, spvEP, x, y, z);
+
 	SpecializationConstant widthSC, heightSC, depthSC;
 	pCompiler->get_work_group_size_specialization_constants(widthSC, heightSC, depthSC);
 
 	auto& wgSize = entryPoint.workgroupSize;
-	populateWorkgroupDimension(wgSize.width, spvEP.workgroup_size.x, widthSC);
-	populateWorkgroupDimension(wgSize.height, spvEP.workgroup_size.y, heightSC);
-	populateWorkgroupDimension(wgSize.depth, spvEP.workgroup_size.z, depthSC);
+	populateWorkgroupDimension(wgSize.width,  x, widthSC);
+	populateWorkgroupDimension(wgSize.height, y, heightSC);
+	populateWorkgroupDimension(wgSize.depth,  z, depthSC);
 }
 
 bool SPIRVToMSLConverter::usesPhysicalStorageBufferAddressesCapability(Compiler* pCompiler) {

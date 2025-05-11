@@ -1,7 +1,7 @@
 /*
  * MoltenVKShaderConverterTool.cpp
  *
- * Copyright (c) 2015-2024 The Brenwill Workshop Ltd. (http://www.brenwill.com)
+ * Copyright (c) 2015-2025 The Brenwill Workshop Ltd. (http://www.brenwill.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,6 +137,7 @@ bool MoltenVKShaderConverterTool::convertSPIRV(const vector<uint32_t>& spv,
 	mslContext.options.mslOptions.pad_argument_buffer_resources = false;
 	mslContext.options.mslOptions.argument_buffers_tier = SPIRV_CROSS_NAMESPACE::CompilerMSL::Options::ArgumentBuffersTier::Tier2;
 	mslContext.options.mslOptions.replace_recursive_inputs = mvkOSVersionIsAtLeast(14.0, 17.0, 1.0);
+	mslContext.options.mslOptions.multi_patch_workgroup = true;
 
 	SPIRVToMSLConverter spvConverter;
 	spvConverter.setSPIRV(spv);

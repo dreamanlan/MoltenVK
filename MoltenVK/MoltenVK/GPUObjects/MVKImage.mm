@@ -1,7 +1,7 @@
 /*
  * MVKImage.mm
  *
- * Copyright (c) 2015-2024 The Brenwill Workshop Ltd. (http://www.brenwill.com)
+ * Copyright (c) 2015-2025 The Brenwill Workshop Ltd. (http://www.brenwill.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,10 +180,10 @@ void MVKImagePlane::initSubresources(const VkImageCreateInfo* pCreateInfo) {
 
     for (uint32_t mipLvl = 0; mipLvl < _image->_mipLevels; mipLvl++) {
         subRez.subresource.mipLevel = mipLvl;
-        VkDeviceSize rowPitch = _image->getBytesPerRow(_planeIndex, mipLvl);
-        VkDeviceSize depthPitch = _image->getBytesPerLayer(_planeIndex, mipLvl);
-
-        VkExtent3D mipExtent = _image->getExtent3D(_planeIndex, mipLvl);
+		VkExtent3D mipExtent = _image->getExtent3D(_planeIndex, mipLvl);
+		auto planeMTLPixFmt = _image->getPixelFormats()->getChromaSubsamplingPlaneMTLPixelFormat(_image->_vkFormat, _planeIndex);
+        VkDeviceSize rowPitch = _image->getBytesPerRow(planeMTLPixFmt, mipExtent.width);
+        VkDeviceSize depthPitch = _image->getPixelFormats()->getBytesPerLayer(planeMTLPixFmt, rowPitch, mipExtent.height);
         
         for (uint32_t layer = 0; layer < _image->_arrayLayers; layer++) {
             subRez.subresource.arrayLayer = layer;
@@ -399,7 +399,7 @@ VkResult MVKImageMemoryBinding::getMemoryRequirements(VkMemoryRequirements* pMem
     return VK_SUCCESS;
 }
 
-VkResult MVKImageMemoryBinding::getMemoryRequirements(const void*, VkMemoryRequirements2* pMemoryRequirements) {
+VkResult MVKImageMemoryBinding::getMemoryRequirements(VkMemoryRequirements2* pMemoryRequirements) {
 	auto& mtlFeats = getMetalFeatures();
     pMemoryRequirements->sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
     for (auto* next = (VkBaseOutStructure*)pMemoryRequirements->pNext; next; next = next->pNext) {
@@ -589,7 +589,7 @@ static MTLRegion getMTLRegion(const ImgRgn& imgRgn) {
 
 // Host-copy from a MTLTexture to memory.
 VkResult MVKImage::copyContent(id<MTLTexture> mtlTex,
-							   VkImageToMemoryCopyEXT imgRgn, uint32_t mipLevel, uint32_t slice,
+							   VkImageToMemoryCopy imgRgn, uint32_t mipLevel, uint32_t slice,
 							   void* pImgBytes, size_t rowPitch, size_t depthPitch) {
 	[mtlTex getBytes: pImgBytes
 		 bytesPerRow: rowPitch
@@ -602,7 +602,7 @@ VkResult MVKImage::copyContent(id<MTLTexture> mtlTex,
 
 // Host-copy from memory to a MTLTexture.
 VkResult MVKImage::copyContent(id<MTLTexture> mtlTex,
-							   VkMemoryToImageCopyEXT imgRgn, uint32_t mipLevel, uint32_t slice,
+							   VkMemoryToImageCopy imgRgn, uint32_t mipLevel, uint32_t slice,
 							   void* pImgBytes, size_t rowPitch, size_t depthPitch) {
 	VkSubresourceLayout imgLayout = { 0, 0, rowPitch, 0, depthPitch};
 #if MVK_MACOS
@@ -653,7 +653,10 @@ VkResult MVKImage::copyContent(const CopyInfo* pCopyInfo) {
 		size_t depthPitch = pixFmts->getBytesPerLayer(mtlPixFmt, rowPitch, texelsHeight);
 		size_t arrayPitch = depthPitch * texelsDepth;
 
-		for (uint32_t imgLyrIdx = 0; imgLyrIdx < imgSubRez.layerCount; imgLyrIdx++) {
+		uint32_t layCnt = imgSubRez.layerCount == VK_REMAINING_ARRAY_LAYERS ?
+			_arrayLayers - imgSubRez.baseArrayLayer :
+			imgSubRez.layerCount;
+		for (uint32_t imgLyrIdx = 0; imgLyrIdx < layCnt; imgLyrIdx++) {
 			VkResult rslt = copyContent(mtlTex,
 										imgRgn,
 										imgSubRez.mipLevel,
@@ -669,7 +672,7 @@ VkResult MVKImage::copyContent(const CopyInfo* pCopyInfo) {
 
 // Host-copy content between images by allocating a temporary memory buffer, copying into it from the
 // source image, and then copying from the memory buffer into the destination image, all using the CPU.
-VkResult MVKImage::copyImageToImage(const VkCopyImageToImageInfoEXT* pCopyImageToImageInfo) {
+VkResult MVKImage::copyImageToImage(const VkCopyImageToImageInfo* pCopyImageToImageInfo) {
 	for (uint32_t imgRgnIdx = 0; imgRgnIdx < pCopyImageToImageInfo->regionCount; imgRgnIdx++) {
 		auto& imgRgn = pCopyImageToImageInfo->pRegions[imgRgnIdx];
 
@@ -680,13 +683,16 @@ VkResult MVKImage::copyImageToImage(const VkCopyImageToImageInfoEXT* pCopyImageT
 		size_t rowPitch = pixFmts->getBytesPerRow(srcMTLPixFmt, imgRgn.extent.width);
 		size_t depthPitch = pixFmts->getBytesPerLayer(srcMTLPixFmt, rowPitch, imgRgn.extent.height);
 		size_t arrayPitch = depthPitch * imgRgn.extent.depth;
-		size_t rgnSizeInBytes = arrayPitch * imgRgn.srcSubresource.layerCount;
+		uint32_t layCnt = imgRgn.srcSubresource.layerCount == VK_REMAINING_ARRAY_LAYERS ?
+			srcMVKImg->getLayerCount() - imgRgn.srcSubresource.baseArrayLayer :
+			imgRgn.srcSubresource.layerCount;
+		size_t rgnSizeInBytes = arrayPitch * layCnt;
 		auto xfrBuffer = unique_ptr<char[]>(new char[rgnSizeInBytes]);
 		void* pImgBytes = xfrBuffer.get();
 
 		// Host-copy the source image content into the memory buffer using the CPU.
-		VkImageToMemoryCopyEXT srcCopy = {
-			VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT,
+		VkImageToMemoryCopy srcCopy = {
+			VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY,
 			nullptr,
 			pImgBytes,
 			0,
@@ -695,8 +701,8 @@ VkResult MVKImage::copyImageToImage(const VkCopyImageToImageInfoEXT* pCopyImageT
 			imgRgn.srcOffset,
 			imgRgn.extent
 		};
-		VkCopyImageToMemoryInfoEXT srcCopyInfo = {
-			VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO_EXT,
+		VkCopyImageToMemoryInfo srcCopyInfo = {
+			VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO,
 			nullptr,
 			pCopyImageToImageInfo->flags,
 			pCopyImageToImageInfo->srcImage,
@@ -708,8 +714,8 @@ VkResult MVKImage::copyImageToImage(const VkCopyImageToImageInfoEXT* pCopyImageT
 
 		// Host-copy the image content from the memory buffer into the destination image using the CPU.
 		MVKImage* dstMVKImg = (MVKImage*)pCopyImageToImageInfo->dstImage;
-		VkMemoryToImageCopyEXT dstCopy = {
-			VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT,
+		VkMemoryToImageCopy dstCopy = {
+			VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY,
 			nullptr,
 			pImgBytes,
 			0,
@@ -718,8 +724,8 @@ VkResult MVKImage::copyImageToImage(const VkCopyImageToImageInfoEXT* pCopyImageT
 			imgRgn.dstOffset,
 			imgRgn.extent
 		};
-		VkCopyMemoryToImageInfoEXT dstCopyInfo = {
-			VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT,
+		VkCopyMemoryToImageInfo dstCopyInfo = {
+			VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO,
 			nullptr,
 			pCopyImageToImageInfo->flags,
 			pCopyImageToImageInfo->dstImage,
@@ -732,7 +738,7 @@ VkResult MVKImage::copyImageToImage(const VkCopyImageToImageInfoEXT* pCopyImageT
 	return VK_SUCCESS;
 }
 
-VkResult MVKImage::copyImageToMemory(const VkCopyImageToMemoryInfoEXT* pCopyImageToMemoryInfo) {
+VkResult MVKImage::copyImageToMemory(const VkCopyImageToMemoryInfo* pCopyImageToMemoryInfo) {
 #if MVK_MACOS
 	// On macOS, if the device doesn't have unified memory, and the texture is using managed memory, we need
 	// to sync the managed memory from the GPU, so the texture content is accessible to be copied by the CPU.
@@ -744,8 +750,11 @@ VkResult MVKImage::copyImageToMemory(const VkCopyImageToMemoryInfoEXT* pCopyImag
 			for (uint32_t imgRgnIdx = 0; imgRgnIdx < pCopyImageToMemoryInfo->regionCount; imgRgnIdx++) {
 				auto& imgRgn = pCopyImageToMemoryInfo->pRegions[imgRgnIdx];
 				auto& imgSubRez = imgRgn.imageSubresource;
+				uint32_t layCnt = imgSubRez.layerCount == VK_REMAINING_ARRAY_LAYERS ?
+					_arrayLayers - imgSubRez.baseArrayLayer :
+					imgSubRez.layerCount;
 				id<MTLTexture> mtlTex = getMTLTexture(getPlaneFromVkImageAspectFlags(imgSubRez.aspectMask));
-				for (uint32_t imgLyrIdx = 0; imgLyrIdx < imgSubRez.layerCount; imgLyrIdx++) {
+				for (uint32_t imgLyrIdx = 0; imgLyrIdx < layCnt; imgLyrIdx++) {
 					[mtlBlitEnc synchronizeTexture: mtlTex
 											 slice: imgSubRez.baseArrayLayer + imgLyrIdx
 											 level: imgSubRez.mipLevel];
@@ -762,7 +771,7 @@ VkResult MVKImage::copyImageToMemory(const VkCopyImageToMemoryInfoEXT* pCopyImag
 	return copyContent(pCopyImageToMemoryInfo);
 }
 
-VkResult MVKImage::copyMemoryToImage(const VkCopyMemoryToImageInfoEXT* pCopyMemoryToImageInfo) {
+VkResult MVKImage::copyMemoryToImage(const VkCopyMemoryToImageInfo* pCopyMemoryToImageInfo) {
 	return copyContent(pCopyMemoryToImageInfo);
 }
 
@@ -781,36 +790,34 @@ VkExtent3D MVKImage::getExtent3D(uint8_t planeIndex, uint32_t mipLevel) {
 	return mvkMipmapLevelSizeFromBaseSize3D(extent, mipLevel);
 }
 
-VkDeviceSize MVKImage::getBytesPerRow(uint8_t planeIndex, uint32_t mipLevel) {
-    MTLPixelFormat planeMTLPixFmt = getPixelFormats()->getChromaSubsamplingPlaneMTLPixelFormat(_vkFormat, planeIndex);
-    size_t bytesPerRow = getPixelFormats()->getBytesPerRow(planeMTLPixFmt, getExtent3D(planeIndex, mipLevel).width);
+VkDeviceSize MVKImage::getBytesPerRow(MTLPixelFormat planePixelFormat, uint32_t mipWidth) {
+    size_t bytesPerRow = getPixelFormats()->getBytesPerRow(planePixelFormat, mipWidth);
     return mvkAlignByteCount(bytesPerRow, _rowByteAlignment);
 }
 
-VkDeviceSize MVKImage::getBytesPerLayer(uint8_t planeIndex, uint32_t mipLevel) {
-    MTLPixelFormat planeMTLPixFmt = getPixelFormats()->getChromaSubsamplingPlaneMTLPixelFormat(_vkFormat, planeIndex);
-    VkExtent3D extent = getExtent3D(planeIndex, mipLevel);
-    size_t bytesPerRow = getBytesPerRow(planeIndex, mipLevel);
-    return getPixelFormats()->getBytesPerLayer(planeMTLPixFmt, bytesPerRow, extent.height);
+VkDeviceSize MVKImage::getBytesPerLayer(uint8_t planeIndex, VkExtent3D mipExtent) {
+	MTLPixelFormat planeMTLPixFmt = getPixelFormats()->getChromaSubsamplingPlaneMTLPixelFormat(_vkFormat, planeIndex);
+	VkDeviceSize bytesPerRow = getBytesPerRow(planeMTLPixFmt, mipExtent.width);
+	return getPixelFormats()->getBytesPerLayer(planeMTLPixFmt, bytesPerRow, mipExtent.height);
 }
 
 VkResult MVKImage::getSubresourceLayout(const VkImageSubresource* pSubresource,
 										VkSubresourceLayout* pLayout) {
-	VkImageSubresource2KHR subresource2 = { VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_KHR, nullptr, *pSubresource};
-	VkSubresourceLayout2KHR layout2 = { VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2_KHR, nullptr, *pLayout};
+	VkImageSubresource2 subresource2 = { VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2, nullptr, *pSubresource};
+	VkSubresourceLayout2 layout2 = { VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2, nullptr, *pLayout};
 	VkResult rslt = getSubresourceLayout(&subresource2, &layout2);
 	*pLayout = layout2.subresourceLayout;
 	return rslt;
 }
 
-VkResult MVKImage::getSubresourceLayout(const VkImageSubresource2KHR* pSubresource,
-										VkSubresourceLayout2KHR* pLayout) {
-	pLayout->sType = VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2_KHR;
-	VkSubresourceHostMemcpySizeEXT* pMemcpySize = nullptr;
+VkResult MVKImage::getSubresourceLayout(const VkImageSubresource2* pSubresource,
+										VkSubresourceLayout2* pLayout) {
+	pLayout->sType = VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2;
+	VkSubresourceHostMemcpySize* pMemcpySize = nullptr;
 	for (auto* next = (VkBaseOutStructure*)pLayout->pNext; next; next = next->pNext) {
 		switch (next->sType) {
-			case VK_STRUCTURE_TYPE_SUBRESOURCE_HOST_MEMCPY_SIZE_EXT: {
-				pMemcpySize = (VkSubresourceHostMemcpySizeEXT*)next;
+			case VK_STRUCTURE_TYPE_SUBRESOURCE_HOST_MEMCPY_SIZE: {
+				pMemcpySize = (VkSubresourceHostMemcpySize*)next;
 				break;
 			}
 			default:
@@ -853,7 +860,6 @@ bool MVKImage::getIsValidViewFormat(VkFormat viewFormat) {
 	return _viewFormats.empty();
 }
 
-
 #pragma mark Resource memory
 
 // There may be less memory bindings than planes, but there will always be at least one.
@@ -891,7 +897,7 @@ VkResult MVKImage::getMemoryRequirements(VkMemoryRequirements* pMemoryRequiremen
 #endif
 
 	// If the image can be used in a host-copy transfer, the memory cannot be private.
-	if (mvkIsAnyFlagEnabled(combinedUsage, VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT)) {
+	if (mvkIsAnyFlagEnabled(combinedUsage, VK_IMAGE_USAGE_HOST_TRANSFER_BIT)) {
 		mvkDisableFlags(pMemoryRequirements->memoryTypeBits, mvkPD->getPrivateMemoryTypes());
 	}
 
@@ -906,10 +912,9 @@ VkResult MVKImage::getMemoryRequirements(VkMemoryRequirements* pMemoryRequiremen
     return getMemoryBinding(planeIndex)->getMemoryRequirements(pMemoryRequirements);
 }
 
-VkResult MVKImage::getMemoryRequirements(const void* pInfo, VkMemoryRequirements2* pMemoryRequirements) {
+VkResult MVKImage::getMemoryRequirements(const VkImageMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements) {
     uint8_t planeIndex = 0;
-	const auto* pImageInfo = (const VkImageMemoryRequirementsInfo2*)pInfo;
-	for (const auto* next = (const VkBaseInStructure*)pImageInfo->pNext; next; next = next->pNext) {
+	for (const auto* next = (const VkBaseInStructure*)pInfo->pNext; next; next = next->pNext) {
 		switch (next->sType) {
 		case VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO: {
 			const auto* planeReqs = (const VkImagePlaneMemoryRequirementsInfo*)next;
@@ -920,9 +925,13 @@ VkResult MVKImage::getMemoryRequirements(const void* pInfo, VkMemoryRequirements
 			break;
 		}
 	}
-    VkResult rslt = getMemoryRequirements(&pMemoryRequirements->memoryRequirements, planeIndex);
-    if (rslt != VK_SUCCESS) { return rslt; }
-    return getMemoryBinding(planeIndex)->getMemoryRequirements(pInfo, pMemoryRequirements);
+	return getMemoryRequirements(pMemoryRequirements, planeIndex);
+}
+
+VkResult MVKImage::getMemoryRequirements(VkMemoryRequirements2 *pMemoryRequirements, uint8_t planeIndex) {
+	VkResult rslt = getMemoryRequirements(&pMemoryRequirements->memoryRequirements, planeIndex);
+	if (rslt != VK_SUCCESS) { return rslt; }
+	return getMemoryBinding(planeIndex)->getMemoryRequirements(pMemoryRequirements);
 }
 
 VkResult MVKImage::bindDeviceMemory(MVKDeviceMemory* mvkMem, VkDeviceSize memOffset, uint8_t planeIndex) {
@@ -942,7 +951,19 @@ VkResult MVKImage::bindDeviceMemory2(const VkBindImageMemoryInfo* pBindInfo) {
                 break;
         }
     }
-    return bindDeviceMemory((MVKDeviceMemory*)pBindInfo->memory, pBindInfo->memoryOffset, planeIndex);
+    VkResult res = bindDeviceMemory((MVKDeviceMemory*)pBindInfo->memory, pBindInfo->memoryOffset, planeIndex);
+    for (const auto* next = (const VkBaseInStructure*)pBindInfo->pNext; next; next = next->pNext) {
+        switch (next->sType) {
+            case VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS: {
+                auto* pBindMemoryStatus = (const VkBindMemoryStatus*)next;
+                *(pBindMemoryStatus->pResult) = res;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    return res;
 }
 
 
@@ -1235,7 +1256,7 @@ MVKImage::MVKImage(MVKDevice* device, const VkImageCreateInfo* pCreateInfo) : MV
             NSUInteger bufferLength = 0;
             for (uint32_t mipLvl = 0; mipLvl < _mipLevels; mipLvl++) {
                 VkExtent3D mipExtent = getExtent3D(planeIndex, mipLvl);
-                bufferLength += getBytesPerLayer(planeIndex, mipLvl) * mipExtent.depth * _arrayLayers;
+                bufferLength += getBytesPerLayer(planeIndex, mipExtent) * mipExtent.depth * _arrayLayers;
             }
             MTLSizeAndAlign sizeAndAlign = [getMTLDevice() heapBufferSizeAndAlignWithLength: bufferLength options: MTLResourceStorageModePrivate];
             memoryBinding->_byteCount += sizeAndAlign.size;
@@ -1243,7 +1264,7 @@ MVKImage::MVKImage(MVKDevice* device, const VkImageCreateInfo* pCreateInfo) : MV
         } else {
             for (uint32_t mipLvl = 0; mipLvl < _mipLevels; mipLvl++) {
                 VkExtent3D mipExtent = getExtent3D(planeIndex, mipLvl);
-                memoryBinding->_byteCount += getBytesPerLayer(planeIndex, mipLvl) * mipExtent.depth * _arrayLayers;
+                memoryBinding->_byteCount += getBytesPerLayer(planeIndex, mipExtent) * mipExtent.depth * _arrayLayers;
             }
             memoryBinding->_byteAlignment = std::max(memoryBinding->_byteAlignment, _rowByteAlignment);
         }
@@ -1979,6 +2000,7 @@ VkResult MVKImageViewPlane::initSwizzledMTLPixelFormat(const VkImageViewCreateIn
 		case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
 		case VK_FORMAT_B5G6R5_UNORM_PACK16:
 		case VK_FORMAT_B5G5R5A1_UNORM_PACK16:
+		case VK_FORMAT_A1B5G5R5_UNORM_PACK16:
 		case VK_FORMAT_B8G8R8A8_SNORM:
 		case VK_FORMAT_B8G8R8A8_UINT:
 		case VK_FORMAT_B8G8R8A8_SINT:

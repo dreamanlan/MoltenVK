@@ -1,7 +1,7 @@
 /*
  * MVKImage.h
  *
- * Copyright (c) 2015-2024 The Brenwill Workshop Ltd. (http://www.brenwill.com)
+ * Copyright (c) 2015-2025 The Brenwill Workshop Ltd. (http://www.brenwill.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,7 @@ public:
     VkResult getMemoryRequirements(VkMemoryRequirements* pMemoryRequirements);
 
     /** Returns the memory requirements of this resource by populating the specified structure. */
-    VkResult getMemoryRequirements(const void* pInfo, VkMemoryRequirements2* pMemoryRequirements);
+    VkResult getMemoryRequirements(VkMemoryRequirements2* pMemoryRequirements);
 
     /** Binds this resource to the specified offset within the specified memory allocation. */
     VkResult bindDeviceMemory(MVKDeviceMemory* mvkMem, VkDeviceSize memOffset) override;
@@ -201,22 +201,22 @@ public:
     /** Returns the number of samples for each pixel of this image. */
     VkSampleCountFlagBits getSampleCount() { return _samples; }
 
-	 /** 
-	  * Returns the number of bytes per image row at the specified zero-based mip level.
-      * For non-compressed formats, this is the number of bytes in a row of texels.
-      * For compressed formats, this is the number of bytes in a row of blocks, which
-      * will typically span more than one row of texels.
-	  */
-	VkDeviceSize getBytesPerRow(uint8_t planeIndex, uint32_t mipLevel);
-
+	/**
+	 * Returns the number of bytes per image row for the mip with the given width.
+	 * For non-compressed formats, this is the number of bytes in a row of texels.
+	 * For compressed formats, this is the number of bytes in a row of blocks, which
+	 * will typically span more than one row of texels.
+	 */
+	VkDeviceSize getBytesPerRow(MTLPixelFormat planePixelFormat, uint32_t mipWidth);
+	
 	/**
 	 * Returns the number of bytes per image layer (for cube, array, or 3D images) 
-	 * at the specified zero-based mip level. This value will normally be the number
-	 * of bytes per row (as returned by the getBytesPerRow() function, multiplied by 
+	 * for the mip with the given extent. This value will normally be the number
+	 * of bytes per row (as returned by the getBytesPerRow() function, multiplied by
 	 * the height of each 2D image.
 	 */
-	VkDeviceSize getBytesPerLayer(uint8_t planeIndex, uint32_t mipLevel);
-    
+	VkDeviceSize getBytesPerLayer(uint8_t planeIndex, VkExtent3D mipExtent);
+	
     /** Returns the number of planes of this image view. */
     uint8_t getPlaneCount() { return _planes.size(); }
 
@@ -228,8 +228,8 @@ public:
 								  VkSubresourceLayout* pLayout);
 
 	/** Populates the specified layout for the specified sub-resource. */
-	VkResult getSubresourceLayout(const VkImageSubresource2KHR* pSubresource,
-								  VkSubresourceLayout2KHR* pLayout);
+	VkResult getSubresourceLayout(const VkImageSubresource2* pSubresource,
+								  VkSubresourceLayout2* pLayout);
 
     /** Populates the specified transfer image descriptor data structure. */
     void getTransferDescriptorData(MVKImageDescriptorData& imgData);
@@ -242,7 +242,9 @@ public:
 	VkResult getMemoryRequirements(VkMemoryRequirements* pMemoryRequirements, uint8_t planeIndex);
 
 	/** Returns the memory requirements of this resource by populating the specified structure. */
-	VkResult getMemoryRequirements(const void* pInfo, VkMemoryRequirements2* pMemoryRequirements);
+	VkResult getMemoryRequirements(const VkImageMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements);
+
+	VkResult getMemoryRequirements(VkMemoryRequirements2* pMemoryRequirements, uint8_t planeIndex);
 
 	/** Binds this resource to the specified offset within the specified memory allocation. */
 	virtual VkResult bindDeviceMemory(MVKDeviceMemory* mvkMem, VkDeviceSize memOffset, uint8_t planeIndex);
@@ -259,13 +261,13 @@ public:
     void flushToDevice(VkDeviceSize offset, VkDeviceSize size);
 
 	/** Host-copy the content of an image to another using the CPU. */
-	static VkResult copyImageToImage(const VkCopyImageToImageInfoEXT* pCopyImageToImageInfo);
+	static VkResult copyImageToImage(const VkCopyImageToImageInfo* pCopyImageToImageInfo);
 
 	/** Host-copy the content of an image to memory using the CPU. */
-	VkResult copyImageToMemory(const VkCopyImageToMemoryInfoEXT* pCopyImageToMemoryInfo);
+	VkResult copyImageToMemory(const VkCopyImageToMemoryInfo* pCopyImageToMemoryInfo);
 
 	/** Host-copy the content of an image from memory using the CPU. */
-	VkResult copyMemoryToImage(const VkCopyMemoryToImageInfoEXT* pCopyMemoryToImageInfo);
+	VkResult copyMemoryToImage(const VkCopyMemoryToImageInfo* pCopyMemoryToImageInfo);
 
 
 #pragma mark Metal
@@ -368,10 +370,10 @@ protected:
 	MVKImageMemoryBinding* getMemoryBinding(uint8_t planeIndex);
 	template<typename CopyInfo> VkResult copyContent(const CopyInfo* pCopyInfo);
 	VkResult copyContent(id<MTLTexture> mtlTex,
-						 VkMemoryToImageCopyEXT imgRgn, uint32_t mipLevel, uint32_t slice,
+						 VkMemoryToImageCopy imgRgn, uint32_t mipLevel, uint32_t slice,
 						 void* pImgBytes, size_t rowPitch, size_t depthPitch);
 	VkResult copyContent(id<MTLTexture> mtlTex,
-						 VkImageToMemoryCopyEXT imgRgn, uint32_t mipLevel, uint32_t slice,
+						 VkImageToMemoryCopy imgRgn, uint32_t mipLevel, uint32_t slice,
 						 void* pImgBytes, size_t rowPitch, size_t depthPitch);
 
     MVKSmallVector<MVKImageMemoryBinding*, 3> _memoryBindings;
@@ -450,8 +452,9 @@ typedef struct  {
 	MVKPresentableSwapchainImage* presentableImage;
 	MVKQueue* queue;				// The queue on which the vkQueuePresentKHR() command was executed.
 	MVKFence* fence;				// VK_EXT_swapchain_maintenance1 fence signaled when resources can be destroyed
-	uint64_t desiredPresentTime;  	// VK_GOOGLE_display_timing desired presentation time in nanoseconds
-	uint32_t presentID;           	// VK_GOOGLE_display_timing presentID
+	uint64_t presentId;				// VK_KHR_present_id presentId
+	uint64_t desiredPresentTime;	// VK_GOOGLE_display_timing desired presentation time in nanoseconds
+	uint32_t presentIDGoogle;	// VK_GOOGLE_display_timing presentID
 	VkPresentModeKHR presentMode;	// VK_EXT_swapchain_maintenance1 present mode specialization
 } MVKImagePresentInfo;
 

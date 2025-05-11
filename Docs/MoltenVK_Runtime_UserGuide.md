@@ -7,7 +7,7 @@
 MoltenVK Runtime User Guide
 ===========================
 
-Copyright (c) 2015-2024 [The Brenwill Workshop Ltd.](http://www.brenwill.com)
+Copyright (c) 2015-2025 [The Brenwill Workshop Ltd.](http://www.brenwill.com)
 
 [comment]: # "This document is written in Markdown (http://en.wikipedia.org/wiki/Markdown) format."
 [comment]: # "For best results, use a Markdown reader."
@@ -56,7 +56,7 @@ distribution package, see the main [`README.md`](../README.md) document in the `
 About **MoltenVK**
 ------------------
 
-**MoltenVK** is a layered implementation of [*Vulkan 1.2*](https://www.khronos.org/vulkan)
+**MoltenVK** is a layered implementation of [*Vulkan 1.3*](https://www.khronos.org/vulkan)
 graphics and compute functionality, that is built on Apple's [*Metal*](https://developer.apple.com/metal)
 graphics and compute framework on *macOS*, *iOS*, and *tvOS*. **MoltenVK** allows you to use *Vulkan*
 graphics and compute functionality to develop modern, cross-platform, high-performance graphical games
@@ -251,34 +251,53 @@ In addition to core *Vulkan* functionality, **MoltenVK**  also supports the foll
 - `VK_KHR_get_memory_requirements2`
 - `VK_KHR_get_physical_device_properties2`
 - `VK_KHR_get_surface_capabilities2`
+- `VK_KHR_global_priority`
 - `VK_KHR_imageless_framebuffer`
 - `VK_EXT_image_2d_view_of_3d`
-  - *Requires MVK_CONFIG_USE_MTLHEAP to be enabled.*
+  - *Requires `MVK_CONFIG_USE_MTLHEAP` to be active.*
 - `VK_KHR_image_format_list`
 - `VK_KHR_incremental_present`
+- `VK_KHR_index_type_uint8`
+- `VK_KHR_load_store_op_none`
 - `VK_KHR_maintenance1`
 - `VK_KHR_maintenance2`
 - `VK_KHR_maintenance3`
+- `VK_KHR_maintenance4`
+- `VK_KHR_maintenance5`
+- `VK_KHR_maintenance6`
+- `VK_KHR_maintenance7`
+- `VK_KHR_maintenance8`
 - `VK_KHR_map_memory2`
 - `VK_KHR_multiview`
 - `VK_KHR_portability_subset`
+- `VK_KHR_present_id`
+- `VK_KHR_present_wait`
 - `VK_KHR_push_descriptor`
 - `VK_KHR_relaxed_block_layout`
+- `VK_KHR_robustness2`
 - `VK_KHR_sampler_mirror_clamp_to_edge`
   - *Requires a Mac GPU or Apple family 7 GPU.*
 - `VK_KHR_sampler_ycbcr_conversion`
 - `VK_KHR_separate_depth_stencil_layouts`
 - `VK_KHR_shader_draw_parameters`
+- `VK_KHR_shader_expect_assume`
 - `VK_KHR_shader_float_controls`
 - `VK_KHR_shader_float16_int8`
 - `VK_KHR_shader_integer_dot_product`
+- `VK_KHR_shader_maximal_reconvergence`
 - `VK_KHR_shader_non_semantic_info`
+- `VK_KHR_shader_quad_control`
+- `VK_KHR_shader_relaxed_extended_instruction`
 - `VK_KHR_shader_subgroup_extended_types`
   - *Requires Metal 2.1 on Mac or Metal 2.2 and Apple family 4 on iOS.*
+- `VK_KHR_shader_subgroup_rotate`
+  - *Requires Metal 2.1 on Mac or Metal 2.2 and Apple family 4 on iOS.*
+- `VK_KHR_shader_subgroup_uniform_control_flow`
 - `VK_KHR_shader_terminate_invocation`
 - `VK_KHR_spirv_1_4`
 - `VK_KHR_storage_buffer_storage_class`
 - `VK_KHR_surface`
+- `VK_KHR_surface_protected_capabilities`
 - `VK_KHR_swapchain`
 - `VK_KHR_swapchain_mutable_format`
 - `VK_KHR_synchronization2`
@@ -286,6 +305,7 @@ In addition to core *Vulkan* functionality, **MoltenVK**  also supports the foll
 - `VK_KHR_uniform_buffer_standard_layout`
 - `VK_KHR_variable_pointers`
 - `VK_KHR_vertex_attribute_divisor`
+- `VK_KHR_vulkan_memory_model`
 - `VK_KHR_zero_initialize_workgroup_memory`
 - `VK_EXT_4444_formats`
   - *Requires 16-bit formats and either native texture swizzling or manual swizzling to be enabled.*
@@ -317,14 +337,17 @@ In addition to core *Vulkan* functionality, **MoltenVK**  also supports the foll
 - `VK_EXT_host_image_copy`
 - `VK_EXT_host_query_reset`
 - `VK_EXT_image_robustness`
+- `VK_EXT_index_type_uint8`
 - `VK_EXT_inline_uniform_block`
 - `VK_EXT_layer_settings`
+- `VK_EXT_load_store_op_none`
 - `VK_EXT_memory_budget`
   - *Requires Metal 2.0.*
 - `VK_EXT_metal_objects`
 - `VK_EXT_metal_surface`
 - `VK_EXT_pipeline_creation_cache_control`
 - `VK_EXT_pipeline_creation_feedback`
+- `VK_EXT_pipeline_robustness`
 - `VK_EXT_post_depth_coverage`
   - *iOS and macOS, requires family 4 (A11) or better Apple GPU.*
 - `VK_EXT_private_data `

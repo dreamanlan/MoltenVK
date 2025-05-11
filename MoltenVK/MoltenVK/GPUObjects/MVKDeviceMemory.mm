@@ -1,7 +1,7 @@
 /*
  * MVKDeviceMemory.mm
  *
- * Copyright (c) 2015-2024 The Brenwill Workshop Ltd. (http://www.brenwill.com)
+ * Copyright (c) 2015-2025 The Brenwill Workshop Ltd. (http://www.brenwill.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ void MVKDeviceMemory::propagateDebugName() {
 	setMetalObjectLabel(_mtlBuffer, _debugName);
 }
 
-VkResult MVKDeviceMemory::map(const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData) {
+VkResult MVKDeviceMemory::map(const VkMemoryMapInfo* pMemoryMapInfo, void** ppData) {
 	if ( !isMemoryHostAccessible() ) {
 		return reportError(VK_ERROR_MEMORY_MAP_FAILED, "Private GPU-only memory cannot be mapped to host memory.");
 	}
@@ -62,7 +62,7 @@ VkResult MVKDeviceMemory::map(const VkMemoryMapInfoKHR* pMemoryMapInfo, void** p
 	return VK_SUCCESS;
 }
 
-VkResult MVKDeviceMemory::unmap(const VkMemoryUnmapInfoKHR* pUnmapMemoryInfo) {
+VkResult MVKDeviceMemory::unmap(const VkMemoryUnmapInfo* pUnmapMemoryInfo) {
 	if ( !isMapped() ) {
 		return reportError(VK_ERROR_MEMORY_MAP_FAILED, "Memory is not mapped. Call vkMapMemory() first.");
 	}

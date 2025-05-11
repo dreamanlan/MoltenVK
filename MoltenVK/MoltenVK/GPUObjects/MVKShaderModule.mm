@@ -1,7 +1,7 @@
 /*
  * MVKShaderModule.mm
  *
- * Copyright (c) 2015-2024 The Brenwill Workshop Ltd. (http://www.brenwill.com)
+ * Copyright (c) 2015-2025 The Brenwill Workshop Ltd. (http://www.brenwill.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,8 +170,8 @@ MVKMTLFunction MVKShaderLibrary::getMTLFunction(const VkSpecializationInfo* pSpe
 
 			auto& wgSize = _shaderConversionResultInfo.entryPoint.workgroupSize;
 			return MVKMTLFunction(mtlFunc, _shaderConversionResultInfo, MTLSizeMake(getWorkgroupDimensionSize(wgSize.width, pSpecializationInfo),
-																				 getWorkgroupDimensionSize(wgSize.height, pSpecializationInfo),
-																				 getWorkgroupDimensionSize(wgSize.depth, pSpecializationInfo)));
+																					getWorkgroupDimensionSize(wgSize.height, pSpecializationInfo),
+																					getWorkgroupDimensionSize(wgSize.depth, pSpecializationInfo)));
 		}
 	}
 }

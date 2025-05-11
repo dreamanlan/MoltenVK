@@ -1,7 +1,7 @@
 /*
  * MVKDevice.h
  *
- * Copyright (c) 2015-2024 The Brenwill Workshop Ltd. (http://www.brenwill.com)
+ * Copyright (c) 2015-2025 The Brenwill Workshop Ltd. (http://www.brenwill.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,7 +134,7 @@ typedef enum {
 } MVKSemaphoreStyle;
 
 /** VkPhysicalDeviceVulkan12Features entries that did not originate in a prior extension. */
-typedef struct MVKPhysicalDeviceVulkan12FeaturesNoExt {
+typedef struct MVKPhysicalDeviceVulkan12NoExtFeatures {
 	VkBool32 samplerMirrorClampToEdge;
 	VkBool32 drawIndirectCount;
 	VkBool32 descriptorIndexing;
@@ -142,7 +142,12 @@ typedef struct MVKPhysicalDeviceVulkan12FeaturesNoExt {
 	VkBool32 shaderOutputViewportIndex;
 	VkBool32 shaderOutputLayer;
 	VkBool32 subgroupBroadcastDynamicId;
-} MVKPhysicalDeviceVulkan12FeaturesNoExt;
+} MVKPhysicalDeviceVulkan12NoExtFeatures;
+
+/** VkPhysicalDeviceVulkan14Features entries that did not originate in a prior extension. */
+typedef struct MVKPhysicalDeviceVulkan14NoExtFeatures {
+	VkBool32 pushDescriptor;
+} MVKPhysicalDeviceVulkan14NoExtFeatures;
 
 /** Represents a Vulkan physical GPU device. */
 class MVKPhysicalDevice : public MVKDispatchableVulkanAPIObject {
@@ -451,7 +456,7 @@ protected:
 	uint32_t getMoltenVKGitRevision();
 	void populateDeviceIDProperties(VkPhysicalDeviceVulkan11Properties* pVk11Props);
 	void populateSubgroupProperties(VkPhysicalDeviceVulkan11Properties* pVk11Props);
-	void populateHostImageCopyProperties(VkPhysicalDeviceHostImageCopyPropertiesEXT* pHostImageCopyProps);
+	template<typename HostImageCopyProps> void populateHostImageCopyProperties(HostImageCopyProps* pHostImageCopyProps);
 	void logGPUInfo();
 
 	MVKInstance* _mvkInstance;
@@ -460,10 +465,11 @@ protected:
 	const MVKExtensionList _supportedExtensions;
 	MVKPixelFormats _pixelFormats;
 	VkPhysicalDeviceFeatures _features;
-	MVKPhysicalDeviceVulkan12FeaturesNoExt _vulkan12FeaturesNoExt;
+	MVKPhysicalDeviceVulkan12NoExtFeatures _vulkan12NoExtFeatures;
+	MVKPhysicalDeviceVulkan14NoExtFeatures _vulkan14NoExtFeatures;
 	MVKPhysicalDeviceMetalFeatures _metalFeatures;
 	VkPhysicalDeviceProperties _properties;
-	VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT _texelBuffAlignProperties;
+	VkPhysicalDeviceTexelBufferAlignmentProperties _texelBuffAlignProperties;
 	VkPhysicalDeviceMemoryProperties _memoryProperties;
 	MVKSmallVector<MVKQueueFamily*, kMVKQueueFamilyCount> _queueFamilies;
 	VkExternalMemoryProperties _hostPointerExternalMemoryProperties;
@@ -564,6 +570,9 @@ public:
 								 const VkCalibratedTimestampInfoEXT* pTimestampInfos,
 								 uint64_t* pTimestamps,
 								 uint64_t* pMaxDeviation);
+
+    /** Returns the granularity of the dynamic rendering optimal render area.  */
+    VkExtent2D getDynamicRenderAreaGranularity();
 
 #pragma mark Object lifecycle
 
@@ -704,9 +713,9 @@ public:
 
 	VkResult createPrivateDataSlot(const VkPrivateDataSlotCreateInfoEXT* pCreateInfo,
 								   const VkAllocationCallbacks* pAllocator,
-								   VkPrivateDataSlotEXT* pPrivateDataSlot);
+								   VkPrivateDataSlot* pPrivateDataSlot);
 
-	void destroyPrivateDataSlot(VkPrivateDataSlotEXT privateDataSlot,
+	void destroyPrivateDataSlot(VkPrivateDataSlot privateDataSlot,
 								const VkAllocationCallbacks* pAllocator);
 
 
@@ -936,7 +945,8 @@ protected:
 	MVKPhysicalDevice* _physicalDevice = nullptr;
 	MVKExtensionList _enabledExtensions;
 	VkPhysicalDeviceFeatures _enabledFeatures;
-	MVKPhysicalDeviceVulkan12FeaturesNoExt _enabledVulkan12FeaturesNoExt;
+	MVKPhysicalDeviceVulkan12NoExtFeatures _enabledVulkan12NoExtFeatures;
+	MVKPhysicalDeviceVulkan14NoExtFeatures _enabledVulkan14NoExtFeatures;
 
 	// List of extended device feature enabling structures, as member variables.
 #define MVK_DEVICE_FEATURE(structName, enumName, flagCount) \
@@ -1108,7 +1118,7 @@ class MVKPrivateDataSlot : public MVKVulkanAPIDeviceObject {
 public:
 
 	/** Returns the Vulkan type of this object. */
-	VkObjectType getVkObjectType() override { return VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT; }
+	VkObjectType getVkObjectType() override { return VK_OBJECT_TYPE_PRIVATE_DATA_SLOT; }
 
 	/** Returns the debug report object type of this object. */
 	VkDebugReportObjectTypeEXT getVkDebugReportObjectType() override { return VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT; }
