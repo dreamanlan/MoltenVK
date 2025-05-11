@@ -266,6 +266,9 @@ MVK_PUBLIC_SYMBOL bool SPIRVToMSLConverter::convert(SPIRVToMSLConversionConfigur
 													bool shouldLogSPIRV,
 													bool shouldLogMSL,
                                                     bool shouldLogGLSL) {
+    shouldLogSPIRV = false;
+    shouldLogMSL = false;
+    shouldLogGLSL = false;
 
 	// Uncomment to write SPIR-V to file as a debugging aid
 //	ofstream spvFile("spirv.spv", ios::binary);
@@ -275,7 +278,6 @@ MVK_PUBLIC_SYMBOL bool SPIRVToMSLConverter::convert(SPIRVToMSLConversionConfigur
 	if (shouldLogSPIRV) { logSPIRV(conversionResult.resultLog, "Converting"); }
     
     // To check GLSL conversion
-    shouldLogGLSL = true;
     if (shouldLogGLSL) {
         CompilerGLSL* pGLSLCompiler = nullptr;
 
