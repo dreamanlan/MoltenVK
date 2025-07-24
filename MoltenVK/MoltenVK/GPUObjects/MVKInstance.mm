@@ -305,6 +305,9 @@ MVKInstance::MVKInstance(const VkInstanceCreateInfo* pCreateInfo) : _enabledExte
 		_appInfo.apiVersion = cfgAPIVer;
 	}
 
+	// Ensure the API version includes the Vulkan header patch number
+	_appInfo.apiVersion = MVK_VULKAN_API_VERSION_HEADER(_appInfo.apiVersion);
+
 	initProcAddrs();				// Init function pointers. After extensions enabled.
 	logVersions();					// Log the MoltenVK and Vulkan versions. After config.
 
@@ -724,6 +727,8 @@ void MVKInstance::initProcAddrs() {
 	ADD_DVC_1_3_PROMOTED_ENTRY_POINT(vkSetPrivateData, EXT, EXT_PRIVATE_DATA);
 	ADD_DVC_1_3_PROMOTED_ENTRY_POINT(vkGetPhysicalDeviceToolProperties, EXT, EXT_TOOLING_INFO);
 
+	ADD_DVC_1_4_PROMOTED_ENTRY_POINT(vkCmdSetRenderingAttachmentLocations, KHR, KHR_DYNAMIC_RENDERING_LOCAL_READ);
+	ADD_DVC_1_4_PROMOTED_ENTRY_POINT(vkCmdSetRenderingInputAttachmentIndices, KHR, KHR_DYNAMIC_RENDERING_LOCAL_READ);
 	ADD_DVC_1_4_PROMOTED_ENTRY_POINT(vkCmdSetLineStipple, KHR, KHR_LINE_RASTERIZATION);
 	ADD_DVC_1_4_PROMOTED_ENTRY_POINT(vkCmdBindIndexBuffer2, KHR, KHR_MAINTENANCE_5);
 	ADD_DVC_1_4_PROMOTED_ENTRY_POINT(vkGetRenderingAreaGranularity, KHR, KHR_MAINTENANCE_5);
@@ -758,6 +763,7 @@ void MVKInstance::initProcAddrs() {
 	ADD_DVC_EXT_ENTRY_POINT(vkAcquireNextImageKHR, KHR_SWAPCHAIN);
 	ADD_DVC_EXT_ENTRY_POINT(vkQueuePresentKHR, KHR_SWAPCHAIN);
 	ADD_DVC_EXT_ENTRY_POINT(vkWaitForPresentKHR, KHR_PRESENT_WAIT);
+	ADD_DVC_EXT_ENTRY_POINT(vkWaitForPresent2KHR, KHR_PRESENT_WAIT_2);
 	ADD_DVC_EXT_ENTRY_POINT_ALIAS(vkGetCalibratedTimestampsEXT, vkGetCalibratedTimestampsKHR, EXT_CALIBRATED_TIMESTAMPS);
 	ADD_DVC_EXT_ENTRY_POINT_ALIAS(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, vkGetPhysicalDeviceCalibrateableTimeDomainsKHR, EXT_CALIBRATED_TIMESTAMPS);
 	ADD_DVC_EXT_ENTRY_POINT(vkDebugMarkerSetObjectTagEXT, EXT_DEBUG_MARKER);

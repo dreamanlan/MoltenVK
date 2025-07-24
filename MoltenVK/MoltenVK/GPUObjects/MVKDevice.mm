@@ -277,7 +277,7 @@ void MVKPhysicalDevice::getFeatures(VkPhysicalDeviceFeatures2* features) {
 		.vertexAttributeInstanceRateDivisor = true,
 		.vertexAttributeInstanceRateZeroDivisor = true,
 		.indexTypeUint8 = true,
-		.dynamicRenderingLocalRead = false,
+		.dynamicRenderingLocalRead = true,
 		.maintenance5 = true,
 		.maintenance6 = true,
 		.pipelineProtectedAccess = false,	// Required only if VkPhysicalDeviceVulkan11Features::protectedMemory is enabled
@@ -372,6 +372,11 @@ void MVKPhysicalDevice::getFeatures(VkPhysicalDeviceFeatures2* features) {
 				dynamicRenderingFeatures->dynamicRendering = supportedFeats13.dynamicRendering;
 				break;
 			}
+			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES: {
+				auto* dynamicRenderingLocalReadFeatures = (VkPhysicalDeviceDynamicRenderingLocalReadFeatures*)next;
+				dynamicRenderingLocalReadFeatures->dynamicRenderingLocalRead = supportedFeats14.dynamicRenderingLocalRead;
+				break;
+			}
 			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES: {
 				auto* globalPriorityFeatures = (VkPhysicalDeviceGlobalPriorityQueryFeatures*)next;
 				globalPriorityFeatures->globalPriorityQuery = supportedFeats14.globalPriorityQuery;
@@ -443,6 +448,11 @@ void MVKPhysicalDevice::getFeatures(VkPhysicalDeviceFeatures2* features) {
 			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES: {
 				auto* pipelineCreationCacheControlFeatures = (VkPhysicalDevicePipelineCreationCacheControlFeatures*)next;
 				pipelineCreationCacheControlFeatures->pipelineCreationCacheControl = supportedFeats13.pipelineCreationCacheControl;
+				break;
+			}
+			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES: {
+				auto* pipelineProtectedAccessFeatures = (VkPhysicalDevicePipelineProtectedAccessFeatures*)next;
+				pipelineProtectedAccessFeatures->pipelineProtectedAccess = supportedFeats14.pipelineProtectedAccess;
 				break;
 			}
 			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_FEATURES: {
@@ -618,9 +628,19 @@ void MVKPhysicalDevice::getFeatures(VkPhysicalDeviceFeatures2* features) {
 				presentIdFeatures->presentId = true;
 				break;
 			}
+			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_2_FEATURES_KHR: {
+				auto* presentId2Features = (VkPhysicalDevicePresentId2FeaturesKHR*)next;
+				presentId2Features->presentId2 = true;
+				break;
+			}
 			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR: {
 				auto* presentWaitFeatures = (VkPhysicalDevicePresentWaitFeaturesKHR*)next;
 				presentWaitFeatures->presentWait = true;
+				break;
+			}
+			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_2_FEATURES_KHR: {
+				auto* presentWait2Features = (VkPhysicalDevicePresentWait2FeaturesKHR*)next;
+				presentWait2Features->presentWait2 = true;
 				break;
 			}
 			case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR: {
@@ -776,7 +796,6 @@ void MVKPhysicalDevice::getProperties(VkPhysicalDeviceProperties2* properties) {
 
 	uint32_t uintMax = std::numeric_limits<uint32_t>::max();
 	uint32_t maxSamplerCnt = getMaxSamplerCount();
-	bool isTier2 = _isUsingMetalArgumentBuffers && (_metalFeatures.argumentBuffersTier >= MTLArgumentBuffersTier2);
 
 	// Create a SSOT for these Vulkan 1.1 properties, which can be queried via two mechanisms here.
 	VkPhysicalDeviceVulkan11Properties supportedProps11;
@@ -791,9 +810,9 @@ void MVKPhysicalDevice::getProperties(VkPhysicalDeviceProperties2* properties) {
 	supportedProps11.maxPerSetDescriptors = getMaxPerSetDescriptorCount();
 	supportedProps11.maxMemoryAllocationSize = _metalFeatures.maxMTLBufferSize;
 
-	static constexpr VkConformanceVersion testedCTSVer = { 1, 3, 8, 0 };	// Latest version of CTS used to test
-
 	// Create a SSOT for these Vulkan 1.2 properties, which can be queried via two mechanisms here.
+	bool isTier2 = isTier2MetalArgumentBuffers();
+	static constexpr VkConformanceVersion testedCTSVer = { 1, 4, 2, 0 };	// Latest version of CTS used to test
 	VkPhysicalDeviceVulkan12Properties supportedProps12;
 	supportedProps12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES;
 	supportedProps12.pNext = nullptr;
@@ -910,14 +929,14 @@ void MVKPhysicalDevice::getProperties(VkPhysicalDeviceProperties2* properties) {
 	supportedProps14.maxVertexAttribDivisor = kMVKUndefinedLargeUInt32;
 	supportedProps14.supportsNonZeroFirstInstance = true;
 	supportedProps14.maxPushDescriptors = _properties.limits.maxPerStageResources;
-	supportedProps14.dynamicRenderingLocalReadDepthStencilAttachments = false;
-	supportedProps14.dynamicRenderingLocalReadMultisampledAttachments = false;
+	supportedProps14.dynamicRenderingLocalReadDepthStencilAttachments = true;
+	supportedProps14.dynamicRenderingLocalReadMultisampledAttachments = true;
 	supportedProps14.earlyFragmentMultisampleCoverageAfterSampleCounting = true;
 	supportedProps14.earlyFragmentSampleMaskTestBeforeSampleCounting = false;
 	supportedProps14.depthStencilSwizzleOneSupport = true;
 	supportedProps14.polygonModePointSize = true;
-	supportedProps14.nonStrictSinglePixelWideLinesUseParallelogram = false;
-	supportedProps14.nonStrictWideLinesUseParallelogram = false;
+	supportedProps14.nonStrictSinglePixelWideLinesUseParallelogram = !_properties.limits.strictLines;
+	supportedProps14.nonStrictWideLinesUseParallelogram = !_properties.limits.strictLines;
 	supportedProps14.blockTexelViewCompatibleMultipleLayers = false;
 	supportedProps14.maxCombinedImageSamplerDescriptorCount = 3;
 	supportedProps14.fragmentShadingRateClampCombinerInputs = false;
@@ -1882,6 +1901,14 @@ VkResult MVKPhysicalDevice::getSurfaceCapabilities(	const VkPhysicalDeviceSurfac
 				((VkSurfaceProtectedCapabilitiesKHR*)next)->supportsProtected = false;
 				break;
 			}
+			case VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_PRESENT_ID_2_KHR: {
+				((VkSurfaceCapabilitiesPresentId2KHR*)next)->presentId2Supported = true;
+				break;
+			}
+			case VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_PRESENT_WAIT_2_KHR: {
+				((VkSurfaceCapabilitiesPresentWait2KHR*)next)->presentWait2Supported = true;
+				break;
+			}
 			default:
 				break;
 		}
@@ -2382,8 +2409,6 @@ void MVKPhysicalDevice::initMetalFeatures() {
 	_metalFeatures.minSwapchainImageCount = kMVKMinSwapchainImageCount;
 	_metalFeatures.maxSwapchainImageCount = kMVKMaxSwapchainImageCount;
 
-	_metalFeatures.maxPerStageStorageTextureCount = 8;
-
 	_metalFeatures.vertexStrideAlignment = supportsMTLGPUFamily(Apple5) ? 1 : 4;
 
 #if MVK_XCODE_15
@@ -2466,7 +2491,9 @@ void MVKPhysicalDevice::initMetalFeatures() {
 		}
 	}
 
-	if (supportsMTLGPUFamily(Apple4)) {
+	if (supportsMTLGPUFamily(Apple6)) {
+		_metalFeatures.maxPerStageTextureCount = 128;
+	} else if (supportsMTLGPUFamily(Apple4)) {
 		_metalFeatures.maxPerStageTextureCount = 96;
 	} else {
 		_metalFeatures.maxPerStageTextureCount = 31;
@@ -2579,7 +2606,9 @@ void MVKPhysicalDevice::initMetalFeatures() {
 		}
 	}
 
-	if (supportsMTLGPUFamily(Apple4)) {
+	if (supportsMTLGPUFamily(Apple6)) {
+		_metalFeatures.maxPerStageTextureCount = 128;
+	} else if (supportsMTLGPUFamily(Apple4)) {
 		_metalFeatures.maxPerStageTextureCount = 96;
 	} else {
 		_metalFeatures.maxPerStageTextureCount = 31;
@@ -2909,7 +2938,7 @@ void MVKPhysicalDevice::initMetalFeatures() {
 	_metalFeatures.needsArgumentBufferEncoders = _metalFeatures.argumentBuffers;
 #endif
 
-	_isUsingMetalArgumentBuffers = _metalFeatures.descriptorSetArgumentBuffers && getMVKConfig().useMetalArgumentBuffers;;
+	_isUsingMetalArgumentBuffers = _metalFeatures.descriptorSetArgumentBuffers && getMVKConfig().useMetalArgumentBuffers;
 
 #define checkSupportsMTLCounterSamplingPoint(mtlSP, mvkSP)  \
 	if ([_mtlDevice respondsToSelector: @selector(supportsCounterSampling:)] &&  \
@@ -2947,6 +2976,19 @@ void MVKPhysicalDevice::initMetalFeatures() {
     _metalFeatures.subgroupUniformControlFlow = _gpuCapabilities.isAppleGPU;
     _metalFeatures.maximalReconvergence = _gpuCapabilities.isAppleGPU && _metalFeatures.subgroupUniformControlFlow;
     _metalFeatures.quadControlFlow = _gpuCapabilities.isAppleGPU && _metalFeatures.maximalReconvergence;
+
+	// Set features for all platforms based on previous settings.
+	// Bump resources up for Tier2 GPU, to meet Vulkan conformance.
+	// Affects push constants limit so keep it reasonable.
+	if (isTier2MetalArgumentBuffers()) {
+		_metalFeatures.maxPerStageTextureCount = 256;
+	}
+	_metalFeatures.maxPerStageStorageTextureCount = _metalFeatures.maxPerStageTextureCount;
+
+}
+
+bool MVKPhysicalDevice::isTier2MetalArgumentBuffers() {
+	return _isUsingMetalArgumentBuffers && (_metalFeatures.argumentBuffersTier >= MTLArgumentBuffersTier2);
 }
 
 // Initializes the physical device features of this instance.
@@ -3138,7 +3180,7 @@ void MVKPhysicalDevice::initLimits() {
 	// Max sum of API and shader values. Bias not publicly supported in API, but can be applied in the shader directly.
 	// The lack of API value is covered by VkPhysicalDevicePortabilitySubsetFeaturesKHR::samplerMipLodBias.
 	// Metal does not specify a limit for the shader value, so choose something reasonable.
-	_properties.limits.maxSamplerLodBias = getMVKConfig().useMetalPrivateAPI ? 16 : 4;
+	_properties.limits.maxSamplerLodBias = 16;
 	_properties.limits.maxSamplerAnisotropy = 16;
 
     _properties.limits.maxVertexInputAttributes = 31;
@@ -3372,13 +3414,13 @@ void MVKPhysicalDevice::initLimits() {
 			break;
 	}
 
-    _properties.limits.pointSizeGranularity = 1;
+    _properties.limits.pointSizeGranularity = 0.125;
     _properties.limits.lineWidthRange[0] = 1;
     _properties.limits.lineWidthRange[1] = _features.wideLines ? 8 : 1;
     _properties.limits.lineWidthGranularity = _features.wideLines ? 0.125f : 0;
 
     _properties.limits.standardSampleLocations = VK_TRUE;
-    _properties.limits.strictLines = _properties.vendorID == kIntelVendorId || _properties.vendorID == kNVVendorId;
+    _properties.limits.strictLines = _properties.vendorID == kNVVendorId;
 
 	VkExtent3D wgSize = mvkVkExtent3DFromMTLSize(_mtlDevice.maxThreadsPerThreadgroup);
 	_properties.limits.maxComputeWorkGroupSize[0] = wgSize.width;
@@ -3432,9 +3474,9 @@ void MVKPhysicalDevice::initLimits() {
 
     // Features with unknown limits - default to Vulkan required limits
 
-    _properties.limits.subPixelPrecisionBits = 4;
-    _properties.limits.subTexelPrecisionBits = 4;
-    _properties.limits.mipmapPrecisionBits = 4;
+    _properties.limits.subPixelPrecisionBits = 8;
+    _properties.limits.subTexelPrecisionBits = 8;
+    _properties.limits.mipmapPrecisionBits = 8;
     _properties.limits.viewportSubPixelBits = 0;
 
     _properties.limits.discreteQueuePriorities = 2;
@@ -5592,10 +5634,10 @@ void MVKDevice::enableFeatures(const VkDeviceCreateInfo* pCreateInfo) {
 				enablePromotedFeatures(LineRasterization, rectangularLines, 6);
 				enablePromotedFeatures(VertexAttributeDivisor, vertexAttributeInstanceRateDivisor, 2);
 				enablePromotedFeatures(IndexTypeUint8, indexTypeUint8, 1);
-//				enablePromotedFeatures(DynamicRenderingLocalRead, dynamicRenderingLocalRead, 1);
+				enablePromotedFeatures(DynamicRenderingLocalRead, dynamicRenderingLocalRead, 1);
 				enablePromotedFeatures(Maintenance5, maintenance5, 1);
 				enablePromotedFeatures(Maintenance6, maintenance6, 1);
-//				enablePromotedFeatures(PipelineProtectedAccess, pipelineProtectedAccess, 1);
+				enablePromotedFeatures(PipelineProtectedAccess, pipelineProtectedAccess, 1);
 				enablePromotedFeatures(PipelineRobustness, pipelineRobustness, 1);
 				enablePromotedFeatures(HostImageCopy, hostImageCopy, 1);
 				enablePromotedFeatures(Vulkan14NoExt, pushDescriptor, 1);

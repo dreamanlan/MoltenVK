@@ -13,18 +13,22 @@ Copyright (c) 2015-2025 [The Brenwill Workshop Ltd.](http://www.brenwill.com)
 
 
 
-MoltenVK 1.3.1
+MoltenVK 1.4.0
 ---------------
 
 Released TBD
 
+- Add support for _Vulkan 1.4_.
 - Add support for extensions:
+	- `VK_KHR_dynamic_rendering_local_read`
 	- `VK_KHR_global_priority`
 	- `VK_KHR_line_rasterization`
 	- `VK_KHR_maintenance5`
 	- `VK_KHR_maintenance8`
 	- `VK_KHR_present_id`
+	- `VK_KHR_present_id2`
 	- `VK_KHR_present_wait`
+	- `VK_KHR_present_wait2`
 	- `VK_KHR_shader_float_controls2`
 	- `VK_KHR_shader_maximal_reconvergence`
 	- `VK_KHR_shader_quad_control`

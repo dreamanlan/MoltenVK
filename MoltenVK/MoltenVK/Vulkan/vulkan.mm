@@ -3132,11 +3132,29 @@ MVK_PUBLIC_VULKAN_SYMBOL VkResult vkTransitionImageLayout(
 }
 
 MVK_PUBLIC_VULKAN_SYMBOL void vkCmdSetLineStipple(
-	 VkCommandBuffer                             commandBuffer,
-	 uint32_t                                    lineStippleFactor,
-	 uint16_t                                    lineStipplePattern) {
+	VkCommandBuffer                             commandBuffer,
+    uint32_t                                    lineStippleFactor,
+    uint16_t                                    lineStipplePattern) {
 
 	MVKTraceVulkanCallStart();
+	MVKTraceVulkanCallEnd();
+}
+
+MVK_PUBLIC_VULKAN_SYMBOL void vkCmdSetRenderingAttachmentLocations(
+    VkCommandBuffer                             commandBuffer,
+	const VkRenderingAttachmentLocationInfo*    pLocationInfo) {
+
+	MVKTraceVulkanCallStart();
+	MVKAddCmd(SetRenderingAttachmentLocations, commandBuffer, pLocationInfo);
+	MVKTraceVulkanCallEnd();
+}
+
+MVK_PUBLIC_VULKAN_SYMBOL void vkCmdSetRenderingInputAttachmentIndices(
+    VkCommandBuffer                             commandBuffer,
+	const VkRenderingInputAttachmentIndexInfo*  pInputAttachmentIndexInfo) {
+
+	MVKTraceVulkanCallStart();
+	MVKAddCmd(SetRenderingInputAttachmentIndices, commandBuffer, pInputAttachmentIndexInfo);
 	MVKTraceVulkanCallEnd();
 }
 
@@ -3292,11 +3310,20 @@ MVK_PUBLIC_VULKAN_CORE_ALIAS(vkEnumeratePhysicalDeviceGroups, KHR);
 MVK_PUBLIC_VULKAN_CORE_ALIAS(vkCmdDrawIndexedIndirectCount, KHR);
 MVK_PUBLIC_VULKAN_CORE_ALIAS(vkCmdDrawIndirectCount, KHR);
 
+
 #pragma mark -
 #pragma mark VK_KHR_dynamic_rendering extension
 
 MVK_PUBLIC_VULKAN_CORE_ALIAS(vkCmdBeginRendering, KHR);
 MVK_PUBLIC_VULKAN_CORE_ALIAS(vkCmdEndRendering, KHR);
+
+
+#pragma mark -
+#pragma mark VK_KHR_dynamic_rendering_local_read extension
+
+MVK_PUBLIC_VULKAN_CORE_ALIAS(vkCmdSetRenderingAttachmentLocations, KHR);
+MVK_PUBLIC_VULKAN_CORE_ALIAS(vkCmdSetRenderingInputAttachmentIndices, KHR);
+
 
 #pragma mark -
 #pragma mark VK_KHR_external_fence_capabilities extension
@@ -3427,7 +3454,28 @@ MVK_PUBLIC_VULKAN_SYMBOL VkResult vkWaitForPresentKHR(
 
 	MVKTraceVulkanCallStart();
 	MVKSwapchain* mvkSC = (MVKSwapchain*)swapchain;
-	VkResult rslt = mvkSC->waitForPresent(presentId, timeout);
+	const VkPresentWait2InfoKHR waitInfo = {
+		.sType = VK_STRUCTURE_TYPE_PRESENT_WAIT_2_INFO_KHR,
+		.presentId = presentId,
+		.timeout = timeout,
+	};
+	VkResult rslt = mvkSC->waitForPresent(&waitInfo);
+	MVKTraceVulkanCallEnd();
+	return rslt;
+}
+
+
+#pragma mark -
+#pragma mark VK_KHR_present_wait2 extension
+
+MVK_PUBLIC_VULKAN_SYMBOL VkResult vkWaitForPresent2KHR(
+    VkDevice                                    device,
+    VkSwapchainKHR                              swapchain,
+    const VkPresentWait2InfoKHR*                pPresentWait2Info) {
+
+	MVKTraceVulkanCallStart();
+	MVKSwapchain* mvkSC = (MVKSwapchain*)swapchain;
+	VkResult rslt = mvkSC->waitForPresent(pPresentWait2Info);
 	MVKTraceVulkanCallEnd();
 	return rslt;
 }
