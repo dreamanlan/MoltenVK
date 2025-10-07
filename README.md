@@ -46,7 +46,7 @@ graphics and compute functionality, that is built on Apple's [*Metal*](https://d
 graphics and compute framework on *macOS*, *iOS*, *tvOS*, and *visionOS*. **MoltenVK** allows
 you to use *Vulkan* graphics and compute functionality to develop modern, cross-platform,
 high-performance graphical games and applications, and to run them across many platforms,
-including *macOS*, *iOS*, *tvOS*, *visionOS*, *Simulators*, and *Mac Catalyst* on *macOS 11.0+*,
+including *macOS*, *iOS*, *tvOS*, *visionOS*, *Simulators*, and *Mac Catalyst*,
 and all *Apple* architectures, including *Apple Silicon*.
 
 *Metal* uses a different shading language, the *Metal Shading Language (MSL)*, than
@@ -324,8 +324,7 @@ included in any of the `make` command-line build commands [mentioned above](#com
 Functionality added with `MVK_USE_METAL_PRIVATE_API` enabled includes:
 - `VkPhysicalDeviceFeatures::wideLines`
 - `VkPhysicalDeviceFeatures::logicOp`
-- `VkPhysicalDeviceFeatures::depthBounds` *(requires an AMD GPU)*
-- `VkPhysicalDevicePortabilitySubsetFeaturesKHR::samplerMipLodBias`
+- `VkPhysicalDevicePortabilitySubsetFeaturesKHR::samplerMipLodBias` (before macOS/iOS 26)
 - `VkGraphicsPipelineRasterizationCreateInfo::sampleMask`, using `MTLRenderPipelineDescriptor.sampleMask` instead of emulating it in the fragment shader
 
 
