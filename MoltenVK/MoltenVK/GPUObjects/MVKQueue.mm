@@ -536,8 +536,7 @@ VkResult MVKQueueCommandBufferSubmission::commitActiveMTLCommandBuffer(bool sign
 	// finishes executing, and therefore cannot be used beyond the active MTLCommandBuffer.
 	// By now, it's been submitted to the MTLCommandBuffer, so remove it from the encoding context,
 	// to ensure a fresh one will be used by commands executing on any subsequent MTLCommandBuffers.
-	if (_encodingContext.visibilityResultBuffer.buffer())
-		_device->returnVisibilityBuffer(std::move(_encodingContext.visibilityResultBuffer));
+	_encodingContext.visibilityResultBuffer = nullptr;
 
 	// If this is the last command buffer in the submission, we're losing the context and need synchronize
 	// current barrier fences to the ones at index 0, which will be what the next submision starts with.

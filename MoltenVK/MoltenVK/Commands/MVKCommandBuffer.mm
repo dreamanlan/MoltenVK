@@ -779,10 +779,10 @@ void MVKCommandEncoder::beginMetalRenderPass(MVKCommandUse cmdUse) {
 												  _isRenderingEntireAttachment,
 												  isRestart);
 	if (_cmdBuffer->_needsVisibilityResultMTLBuffer) {
-		if (!_pEncodingContext->visibilityResultBuffer.buffer()) {
-			_pEncodingContext->visibilityResultBuffer = _device->getVisibilityBuffer();
+		if ( !_pEncodingContext->visibilityResultBuffer ) {
+			_pEncodingContext->visibilityResultBuffer = getTempMTLBuffer(getMetalFeatures().maxQueryBufferSize, true, true);
 		}
-		mtlRPDesc.visibilityResultBuffer = _pEncodingContext->visibilityResultBuffer.buffer();
+		mtlRPDesc.visibilityResultBuffer = _pEncodingContext->visibilityResultBuffer->_mtlBuffer;
 	}
 
 	// Metal uses MTLRenderPassDescriptor properties renderTargetWidth, renderTargetHeight,
@@ -843,6 +843,8 @@ void MVKCommandEncoder::beginMetalRenderPass(MVKCommandUse cmdUse) {
 	// separately from a Vulkan subpass, and we otherwise only need to clear render
 	// area if we're not rendering to the entire attachment.
     if ( !isRestart && !_isRenderingEntireAttachment ) { clearRenderArea(cmdUse); }
+
+	_occlusionQueryState.beginMetalRenderPass(this);
 }
 
 void MVKCommandEncoder::restartMetalRenderPassIfNeeded() {
@@ -1068,41 +1070,12 @@ void MVKCommandEncoder::endCurrentMetalEncoding() {
 	encodeTimestampStageCounterSamples();
 }
 
-static MTLDispatchType getDispatchType(MVKCommandUse use) {
-	switch (use) {
-		case kMVKCommandUseAccumOcclusionQuery:
-			return MTLDispatchTypeConcurrent;
-		default:
-			return MTLDispatchTypeSerial;
-	}
-}
-
-static bool wantsSeparateComputeEncoder(MVKCommandUse use) {
-	switch (use) {
-		case kMVKCommandUseAccumOcclusionQuery:
-			return true;
-		default:
-			return false;
-	}
-}
-
-static bool shouldStartNewEncoder(MVKCommandUse prev, MVKCommandUse next) {
-	if (prev == next)
-		return false;
-	if (getDispatchType(prev) != getDispatchType(next))
-		return true;
-	return wantsSeparateComputeEncoder(prev) || wantsSeparateComputeEncoder(next);
-}
-
 id<MTLComputeCommandEncoder> MVKCommandEncoder::getMTLComputeEncoder(MVKCommandUse cmdUse) {
 	bool needWaits = false;
-	if (!_mtlComputeEncoder || shouldStartNewEncoder(_mtlComputeEncoderUse, cmdUse)) {
+	if ( !_mtlComputeEncoder ) {
 		needWaits = true;
 		endCurrentMetalEncoding();
-		if ([_mtlCmdBuffer respondsToSelector:@selector(computeCommandEncoderWithDispatchType:)])
-			_mtlComputeEncoder = [_mtlCmdBuffer computeCommandEncoderWithDispatchType:getDispatchType(cmdUse)];
-		else
-			_mtlComputeEncoder = [_mtlCmdBuffer computeCommandEncoder];
+		_mtlComputeEncoder = [_mtlCmdBuffer computeCommandEncoder];
 		retainIfImmediatelyEncoding(_mtlComputeEncoder);
 		beginMetalComputeEncoding(cmdUse);
 	}

@@ -54,8 +54,8 @@ struct BarrierFenceSlots {
 
 /** Context for tracking information across multiple encodings. */
 typedef struct MVKCommandEncodingContext {
-	uint32_t firstVisibilityResultOffsetInRenderPass = 0;
-	MVKVisibilityBuffer visibilityResultBuffer;
+	NSUInteger mtlVisibilityResultOffset = 0;
+	const MVKMTLBufferAllocation* visibilityResultBuffer = nullptr;
 	BarrierFenceSlots fenceSlots;
 
 	void syncFences(MVKDevice *device, id<MTLCommandBuffer> mtlCommandBuffer);
