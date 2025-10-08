@@ -154,9 +154,9 @@ protected:
 	void propagateDebugName() override;
 	VkDeviceSize adjustMemorySize(VkDeviceSize size, VkDeviceSize offset);
 	VkResult addBuffer(MVKBuffer* mvkBuff);
-	static void removeBuffer(MVKDeviceMemory** pMem, MVKBuffer* mvkBuf);
+	void removeBuffer(MVKBuffer* mvkBuff);
 	VkResult addImageMemoryBinding(MVKImageMemoryBinding* mvkImg);
-	static void removeImageMemoryBinding(MVKDeviceMemory** pMem, MVKImageMemoryBinding* mvkImg);
+	void removeImageMemoryBinding(MVKImageMemoryBinding* mvkImg);
 	bool ensureMTLHeap();
 	bool ensureMTLBuffer();
 	bool ensureHostMemory();

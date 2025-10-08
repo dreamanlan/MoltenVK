@@ -55,11 +55,11 @@ void MVKCmdDispatch::encode(MVKCommandEncoder* cmdEncoder) {
 		} else {
 			// We have to pass the base group in a buffer.
 			uint32_t base[3] = {(uint32_t)mtlThreadgroupCount.origin.x, (uint32_t)mtlThreadgroupCount.origin.y, (uint32_t)mtlThreadgroupCount.origin.z};
-			cmdEncoder->setComputeBytes(mtlEncoder, base, sizeof(base), pipeline->getImplicitBuffers().ids[MVKImplicitBuffer::DispatchBase]);
+			cmdEncoder->setComputeBytes(mtlEncoder, base, sizeof(base), pipeline->getIndirectParamsIndex().stages[kMVKShaderStageCompute]);
 		}
 	}
 	[mtlEncoder dispatchThreadgroups: mtlThreadgroupCount.size
-			   threadsPerThreadgroup: pipeline->getThreadgroupSize()];
+			   threadsPerThreadgroup: cmdEncoder->_mtlThreadgroupSize];
 }
 
 
@@ -78,6 +78,6 @@ void MVKCmdDispatchIndirect::encode(MVKCommandEncoder* cmdEncoder) {
     cmdEncoder->finalizeDispatchState();	// Ensure all updated state has been submitted to Metal
     [cmdEncoder->getMTLComputeEncoder(kMVKCommandUseDispatch) dispatchThreadgroupsWithIndirectBuffer: _mtlIndirectBuffer
 																				indirectBufferOffset: _mtlIndirectBufferOffset
-																			   threadsPerThreadgroup: cmdEncoder->getComputePipeline()->getThreadgroupSize()];
+																			   threadsPerThreadgroup: cmdEncoder->_mtlThreadgroupSize];
 }
 

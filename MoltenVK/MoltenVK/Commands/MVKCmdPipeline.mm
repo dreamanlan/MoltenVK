@@ -330,7 +330,7 @@ void MVKCmdBindDescriptorSetsStatic<N>::encode(MVKCommandEncoder* cmdEncoder) {
 
 template <size_t N>
 void MVKCmdBindDescriptorSetsStatic<N>::encode(MVKCommandEncoder* cmdEncoder, MVKArrayRef<uint32_t> dynamicOffsets) {
-	cmdEncoder->getState().bindDescriptorSets(_pipelineBindPoint, _pipelineLayout, _firstSet, static_cast<uint32_t>(_descriptorSets.size()), _descriptorSets.data(), static_cast<uint32_t>(dynamicOffsets.size()), dynamicOffsets.data());
+	_pipelineLayout->bindDescriptorSets(cmdEncoder, _pipelineBindPoint, _descriptorSets.contents(), _firstSet, dynamicOffsets);
 }
 
 template <size_t N>
@@ -399,7 +399,18 @@ VkResult MVKCmdPushConstants<N>::setContent(MVKCommandBuffer* cmdBuff,
 
 template <size_t N>
 void MVKCmdPushConstants<N>::encode(MVKCommandEncoder* cmdEncoder) {
-	cmdEncoder->getState().pushConstants(_offset, static_cast<uint32_t>(_pushConstants.byteSize()), _pushConstants.data());
+    VkShaderStageFlagBits stages[] = {
+        VK_SHADER_STAGE_VERTEX_BIT,
+        VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+        VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+        VK_SHADER_STAGE_FRAGMENT_BIT,
+        VK_SHADER_STAGE_COMPUTE_BIT
+    };
+    for (auto stage : stages) {
+        if (mvkAreAllFlagsEnabled(_stageFlags, stage)) {
+			cmdEncoder->getPushConstants(stage)->setPushConstants(_offset, _pushConstants.contents());
+        }
+    }
 }
 
 template class MVKCmdPushConstants<64>;
@@ -464,11 +475,13 @@ VkResult MVKCmdPushDescriptorSet::setContent(MVKCommandBuffer* cmdBuff,
 		}
 	}
 
-	return VK_SUCCESS;
+	// Validate by encoding on a null encoder
+	encode(nullptr);
+	return _pipelineLayout->getConfigurationResult();
 }
 
 void MVKCmdPushDescriptorSet::encode(MVKCommandEncoder* cmdEncoder) {
-	cmdEncoder->getState().pushDescriptorSet(_pipelineBindPoint, _pipelineLayout, _set, static_cast<uint32_t>(_descriptorWrites.size()), _descriptorWrites.data());
+	_pipelineLayout->pushDescriptorSet(cmdEncoder, _pipelineBindPoint, _descriptorWrites.contents(), _set);
 }
 
 MVKCmdPushDescriptorSet::~MVKCmdPushDescriptorSet() {
@@ -523,11 +536,13 @@ VkResult MVKCmdPushDescriptorSetWithTemplate::setContent(MVKCommandBuffer* cmdBu
 		mvkCopy(_pData, pData, _dataSize);
 	}
 
-	return VK_SUCCESS;
+	// Validate by encoding on a null encoder
+	encode(nullptr);
+	return _pipelineLayout->getConfigurationResult();
 }
 
 void MVKCmdPushDescriptorSetWithTemplate::encode(MVKCommandEncoder* cmdEncoder) {
-	cmdEncoder->getState().pushDescriptorSet(_descUpdateTemplate, _pipelineLayout, _set, _pData);
+	_pipelineLayout->pushDescriptorSet(cmdEncoder, _descUpdateTemplate, _set, _pData);
 }
 
 MVKCmdPushDescriptorSetWithTemplate::~MVKCmdPushDescriptorSetWithTemplate() {
