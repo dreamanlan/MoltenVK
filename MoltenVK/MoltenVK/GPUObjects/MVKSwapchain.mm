@@ -196,10 +196,8 @@ VkResult MVKSwapchain::getRefreshCycleDuration(VkRefreshCycleDurationGOOGLE *pRe
 		CGDisplayModeRef mode = CGDisplayCopyDisplayMode(displayId);
 		framesPerSecond = CGDisplayModeGetRefreshRate(mode);
 		CGDisplayModeRelease(mode);
-#if MVK_XCODE_13
 		if (framesPerSecond == 0 && [screen respondsToSelector: @selector(maximumFramesPerSecond)])
 			framesPerSecond = [screen maximumFramesPerSecond];
-#endif
 		// Builtin panels, e.g., on MacBook, report a zero refresh rate.
 		if (framesPerSecond == 0)
 			framesPerSecond = 60.0;
@@ -492,7 +490,7 @@ void MVKSwapchain::initCAMetalLayer(const VkSwapchainCreateInfoKHR* pCreateInfo,
 	mtlLayer.drawableSize = mvkCGSizeFromVkExtent2D(_imageExtent);
 	mtlLayer.device = getMTLDevice();
 	mtlLayer.pixelFormat = getPixelFormats()->getMTLPixelFormat(pCreateInfo->imageFormat);
-	mtlLayer.maximumDrawableCountMVK = imgCnt;
+	mtlLayer.maximumDrawableCount = imgCnt;
 	mtlLayer.displaySyncEnabledMVK = (pCreateInfo->presentMode != VK_PRESENT_MODE_IMMEDIATE_KHR);
 	mtlLayer.minificationFilter = minMagFilter;
 	mtlLayer.magnificationFilter = minMagFilter;
@@ -634,9 +632,7 @@ void MVKSwapchain::initSurfaceImages(const VkSwapchainCreateInfoKHR* pCreateInfo
 		// To prevent deadlocks, avoid dispatching screenMVK to the main thread at the cost of a less informative log.
 		if (NSThread.isMainThread) {
 			auto* screen = mtlLayer.screenMVK;
-			if ([screen respondsToSelector:@selector(localizedName)]) {
-				screenName = screen.localizedName;
-			}
+			screenName = screen.localizedName;
 		}
 #endif
 		MVKLogInfo("Created %d swapchain images with size (%d, %d) and contents scale %.1f in layer %s (%p) on screen %s.",

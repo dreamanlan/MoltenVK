@@ -69,8 +69,8 @@ to their *MSL* equivalents.
 
 To provide *Vulkan* capability to the *macOS*, *iOS*, and *tvOS* platforms, **MoltenVK** uses
 *Apple's* publicly available API's, including *Metal*. **MoltenVK** does **_not_** use any
-private or undocumented API calls or features, so your app will be compatible with all
-standard distribution channels, including *Apple's App Store*.
+private or undocumented API calls or features unless configured to do so at build time, so your
+app will be compatible with all standard distribution channels, including *Apple's App Store*.
 
 
 <a name="install"></a>
@@ -190,7 +190,9 @@ your app, and to avoid build errors, be sure to use the latest publicly availabl
 Once built, your app integrating the **MoltenVK** libraries can be run on *macOS*, *iOS* or *tvOS*
 devices that support *Metal*, or on the *Xcode* *iOS Simulator* or *tvOS Simulator*.
 
-- At runtime, **MoltenVK** requires at least *macOS 11.0*, *iOS 14*, or *tvOS 14*.
+- At runtime, **MoltenVK** requires at least *macOS 11.0*, *iOS 14*, or *tvOS 14.5*.
+  - This support policy is based on the earliest deployment target [officially supported](https://developer.apple.com/support/xcode/)
+    by the latest version of Xcode.
 - Information on *macOS* devices that are compatible with *Metal* can be found in
   [this article](http://www.idownloadblog.com/2015/06/22/how-to-find-mac-el-capitan-metal-compatible).
 - Information on *iOS* devices that are compatible with *Metal* can be found in
@@ -356,18 +358,26 @@ In addition to core *Vulkan* functionality, **MoltenVK**  also supports the foll
 - `VK_EXT_index_type_uint8`
 - `VK_EXT_inline_uniform_block`
 - `VK_EXT_layer_settings`
+- `VK_EXT_legacy_dithering`
+  - *Requires a build of MoltenVK with `MVK_USE_METAL_PRIVATE_API` enabled.*
 - `VK_EXT_line_rasterization`
 - `VK_EXT_load_store_op_none`
 - `VK_EXT_memory_budget`
   - *Requires Metal 2.0.*
 - `VK_EXT_metal_objects`
 - `VK_EXT_metal_surface`
+- `VK_EXT_non_seamless_cube_map`
+  - *Requires a build of MoltenVK with `MVK_USE_METAL_PRIVATE_API` enabled.*
 - `VK_EXT_pipeline_creation_cache_control`
 - `VK_EXT_pipeline_creation_feedback`
 - `VK_EXT_pipeline_robustness`
 - `VK_EXT_post_depth_coverage`
   - *iOS and macOS, requires family 4 (A11) or better Apple GPU.*
+- `VK_EXT_primitive_topology_list_restart`
+  - *Requires a build of MoltenVK with `MVK_USE_METAL_PRIVATE_API` enabled.*
 - `VK_EXT_private_data `
+- `VK_EXT_provoking_vertex`
+  - *Requires a build of MoltenVK with `MVK_USE_METAL_PRIVATE_API` enabled.*
 - `VK_EXT_robustness2`
 - `VK_EXT_sample_locations`
 - `VK_EXT_scalar_block_layout`

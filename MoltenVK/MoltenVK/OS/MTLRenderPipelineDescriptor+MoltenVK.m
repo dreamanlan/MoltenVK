@@ -19,9 +19,9 @@
 
 #include "MTLRenderPipelineDescriptor+MoltenVK.h"
 #include "MVKCommonEnvironment.h"
+#include "mvk_datatypes.h"
 
 #if MVK_USE_METAL_PRIVATE_API
-typedef NSUInteger MTLLogicOperation;
 
 // These properties aren't public yet.
 @interface MTLRenderPipelineDescriptor ()
@@ -38,15 +38,6 @@ typedef NSUInteger MTLLogicOperation;
 #endif
 
 @implementation MTLRenderPipelineDescriptor (MoltenVK)
-
--(MTLPrimitiveTopologyClass) inputPrimitiveTopologyMVK {
-	if ( [self respondsToSelector: @selector(inputPrimitiveTopology)] ) { return [self inputPrimitiveTopology]; }
-	return MTLPrimitiveTopologyClassUnspecified;
-}
-
--(void) setInputPrimitiveTopologyMVK: (MTLPrimitiveTopologyClass) topology {
-	if ([self respondsToSelector: @selector(setInputPrimitiveTopology:)]) { [self setInputPrimitiveTopology:topology]; }
-}
 
 -(NSUInteger) sampleMaskMVK {
 #if MVK_USE_METAL_PRIVATE_API

@@ -284,14 +284,18 @@ typedef struct MVKVtxAdj {
 	MTLIndexType idxType;
 	bool isMultiView;
 	bool isTriFan;
+	bool isPrimRestart;
+	bool isUint8Index;
+	bool isProvokingVertexLast;
 } MVKVtxAdj;
 
 // Populates triangle vertex indexes for a triangle fan.
 template<typename T>
 static inline void populateTriIndxsFromTriFan(device T* triIdxs,
                                               constant T* triFanIdxs,
-                                              uint32_t triFanIdxCnt) {
-	T primRestartSentinel = (T)0xFFFFFFFF;
+                                              uint32_t triFanIdxCnt,
+                                              constant MVKVtxAdj& vtxAdj) {
+	T primRestartSentinel = vtxAdj.isUint8Index ? (T)0xFF : (T)0xFFFFFFFF;
 	uint32_t triIdxIdx = 0;
 	uint32_t triFanBaseIdx = 0;
 	uint32_t triFanIdxIdx = triFanBaseIdx + 2;
@@ -300,24 +304,24 @@ static inline void populateTriIndxsFromTriFan(device T* triIdxs,
 
 		// Detect primitive restart on any index, to catch possible consecutive restarts
 		T triIdx0 = triFanIdxs[triFanBaseIdx];
-		if (triIdx0 == primRestartSentinel)
+		if (vtxAdj.isPrimRestart && triIdx0 == primRestartSentinel)
 			triFanBaseIdx++;
 
 		T triIdx1 = triFanIdxs[triFanIdxIdx - 1];
-		if (triIdx1 == primRestartSentinel)
+		if (vtxAdj.isPrimRestart && triIdx1 == primRestartSentinel)
 			triFanBaseIdx = triFanIdxIdx;
 
 		T triIdx2 = triFanIdxs[triFanIdxIdx];
-		if (triIdx2 == primRestartSentinel)
+		if (vtxAdj.isPrimRestart && triIdx2 == primRestartSentinel)
 			triFanBaseIdx = triFanIdxIdx + 1;
 
 		if (triFanBaseIdx != triFanBaseIdxCurr) {    // Restart the triangle fan
 			triFanIdxIdx = triFanBaseIdx + 2;
 		} else {
 			// Provoking vertex is 1 in triangle fan but 0 in triangle list
-			triIdxs[triIdxIdx++] = triIdx1;
-			triIdxs[triIdxIdx++] = triIdx2;
-			triIdxs[triIdxIdx++] = triIdx0;
+			triIdxs[triIdxIdx++] = vtxAdj.isProvokingVertexLast ? triIdx0 : triIdx1;
+			triIdxs[triIdxIdx++] = vtxAdj.isProvokingVertexLast ? triIdx1 : triIdx2;
+			triIdxs[triIdxIdx++] = vtxAdj.isProvokingVertexLast ? triIdx2 : triIdx0;
 			triFanIdxIdx++;
 		}
 	}
@@ -379,12 +383,14 @@ kernel void cmdDrawIndexedIndirectConvertBuffers(const device char* srcBuff [[bu
 			case MTLIndexTypeUInt16:
 				populateTriIndxsFromTriFan(&((device uint16_t*)triIdxs)[dst.indexStart],
 				                           &((constant uint16_t*)triFanIdxs)[src.indexStart],
-				                           src.indexCount);
+				                           src.indexCount,
+				                           vtxAdj);
 				break;
 			case MTLIndexTypeUInt32:
 				populateTriIndxsFromTriFan(&((device uint32_t*)triIdxs)[dst.indexStart],
 				                           &((constant uint32_t*)triFanIdxs)[src.indexStart],
-				                           src.indexCount);
+				                           src.indexCount,
+				                           vtxAdj);
 				break;
 		}
 	}
@@ -567,5 +573,12 @@ kernel void convertUint8Indices(device uint8_t* src [[ buffer(0) ]],
                                 uint pos [[thread_position_in_grid]]) {
 	uint8_t idx = src[pos];
 	dst[pos] = idx == 0xFF ? 0xFFFF : idx;
+}
+
+kernel void convertUint8IndicesRaw(device uint8_t* src [[ buffer(0) ]],
+                                   device uint16_t* dst [[ buffer(1) ]],
+                                   uint pos [[thread_position_in_grid]]) {
+	uint8_t idx = src[pos];
+	dst[pos] = idx;
 }
 )";

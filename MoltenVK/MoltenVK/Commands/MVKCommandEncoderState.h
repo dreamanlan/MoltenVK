@@ -210,6 +210,12 @@ struct MVKVulkanGraphicsCommandEncoderState: public MVKVulkanCommonEncoderState 
 	uint32_t getPatchControlPoints() const {
 		return pickRenderState(MVKRenderStateFlag::PatchControlPoints).patchControlPoints;
 	}
+	bool isPrimitiveRestartEnabled() const {
+		return pickRenderState(MVKRenderStateFlag::PrimitiveRestartEnable).enable.has(MVKRenderStateEnableFlag::PrimitiveRestart);
+	}
+	bool getProvokingVertexMode() const {
+		return pickRenderState(MVKRenderStateFlag::ProvokingVertexMode).provokingVertexMode;
+	}
 
 	/** Bind the given descriptor sets, placing their bindings into `_descriptorSetBindings`. */
 	void bindDescriptorSets(MVKPipelineLayout* layout,
@@ -286,6 +292,7 @@ enum class MVKMetalRenderEncoderStateFlag {
 	DepthBoundsEnable,
 	DepthClampEnable,
 	DepthTestEnable,
+	PrimitiveRestartEnable,
 	RasterizationDisabledByScissor,
 	ScissorDirty,
 	PipelineReady,
@@ -329,6 +336,7 @@ struct MVKMetalGraphicsCommandEncoderStateQuickReset {
 	uint8_t _cullMode;
 	uint8_t _frontFace;
 	MVKPolygonMode _polygonMode;
+	uint8_t _provokingVertexMode;
 
 	// Memset 0 to here to clear.
 	// DO NOT memset sizeof(*this), or you'll clear padding, which is used by subclasses.
@@ -343,6 +351,7 @@ struct MVKMetalGraphicsCommandEncoderState : public MVKMetalGraphicsCommandEncod
 	MVKDepthBounds _depthBounds;
 	float _lineWidth;
 	uint32_t _sampleCount;
+	uint32_t _primitiveRestartIndex;
 	MVKMTLDepthStencilDescriptorData _depthStencil;
 
 	MVKOnePerGraphicsStage<MVKStageResourceBindings> _bindings;
