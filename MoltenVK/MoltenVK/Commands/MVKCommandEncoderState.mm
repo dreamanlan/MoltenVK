@@ -469,6 +469,8 @@ static void executeBindOp(id<MTLCommandEncoder> encoder,
 	MVKDevice* dev = mvkEncoder.getDevice();
 	for (uint32_t i = 0; i < count; i++, src += stride) {
 		id resource = *reinterpret_cast<const id*>(src);
+        if (!IsValidObjcId(resource))
+            continue;
 		switch (Op) {
 			case MVKDescriptorBindOperationCode::BindBytes:
 				assert(0); // Handled above
@@ -519,7 +521,9 @@ static void executeBindOp(id<MTLCommandEncoder> encoder,
 				break;
 
 			case MVKDescriptorBindOperationCode::BindSampler:
-				bindSampler(encoder, static_cast<id<MTLSamplerState>>(resource), target + i, exists, bindings, binder);
+                if (IsValidMTLSampler(resource)) {
+                    bindSampler(encoder, static_cast<id<MTLSamplerState>>(resource), target + i, exists, bindings, binder);
+                }
 				break;
 
 			case MVKDescriptorBindOperationCode::BindSamplerWithLiveCheck:

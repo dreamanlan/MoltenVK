@@ -886,7 +886,7 @@ template <> struct MVKArgBufEncoder<MVKArgumentBufferMode::Metal3> {
 	void advance(size_t stride) { dst = reinterpret_cast<MVKGPUResource*>(reinterpret_cast<char*>(dst) + stride); }
 	void* constantData(size_t index) { return reinterpret_cast<char*>(dst) + index; }
 	void setTexture(id<MTLTexture> tex,       size_t index = 0) { dst[index].resource = tex.gpuResourceID; }
-	void setSampler(id<MTLSamplerState> samp, size_t index = 0) { dst[index].resource = samp.gpuResourceID; }
+	void setSampler(id<MTLSamplerState> samp, size_t index = 0) { if (IsValidMTLSampler(samp)) dst[index].resource = samp.gpuResourceID; }
 	void setBuffer(id<MTLBuffer> buf, uint64_t offset, size_t index = 0) {
 		dst[index].gpuAddress = buf.gpuAddress + offset;
 	}
