@@ -54,11 +54,6 @@ using namespace std;
 #   define MTLPixelFormatBGRG422                    MTLPixelFormatInvalid
 #endif
 
-#if !MVK_XCODE_15
-#   define MTLVertexFormatFloatRG11B10              MTLVertexFormatInvalid
-#   define MTLVertexFormatFloatRGB9E5               MTLVertexFormatInvalid
-#endif
-
 
 #pragma mark -
 #pragma mark MVKPixelFormats
@@ -627,11 +622,9 @@ MTLTextureUsage MVKPixelFormats::getMTLTextureUsage(VkImageUsageFlags vkImageUsa
 		mvkEnableFlags(mtlUsage, MTLTextureUsageShaderWrite);
 	}
 
-#if MVK_XCODE_15
 	if (supportAtomics && (mtlFormat == MTLPixelFormatR32Uint || mtlFormat == MTLPixelFormatR32Sint)) {
 		mvkEnableFlags(mtlUsage, MTLTextureUsageShaderAtomic);
 	}
-#endif
 
     // Clearing a linear image may use shader writes.
     if (mvkIsAnyFlagEnabled(vkImageUsageFlags, (VK_IMAGE_USAGE_TRANSFER_DST_BIT)) &&
@@ -660,9 +653,6 @@ MTLTextureUsage MVKPixelFormats::getMTLTextureUsage(VkImageUsageFlags vkImageUsa
 	}
 
 	bool pfv = false;
-
-	// Swizzle emulation may need to reinterpret
-	needsReinterpretation |= !_physicalDevice->getMetalFeatures()->nativeTextureSwizzle;
 
 	pfv |= isColorFormat && needsReinterpretation &&
 	       mvkIsAnyFlagEnabled(vkImageUsageFlags, (VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -1490,10 +1480,6 @@ void MVKPixelFormats::modifyMTLFormatCapabilities(const MVKMTLDeviceCapabilities
 // Connects Vulkan and Metal pixel formats to one-another.
 void MVKPixelFormats::buildVkFormatMaps(const MVKMTLDeviceCapabilities& gpuCaps) {
 	for (auto& vkDesc : _vkFormatDescriptions) {
-		if (vkDesc.needsSwizzle() && !_physicalDevice->getMetalFeatures()->nativeTextureSwizzle && !getMVKConfig().fullImageViewSwizzle) {
-			vkDesc.mtlPixelFormat = vkDesc.mtlPixelFormatSubstitute = MTLPixelFormatInvalid;
-		}
-
 		// Populate the back reference from the Metal formats to the Vulkan format.
 		// Validate the corresponding Metal formats for the platform, and clear them
 		// if the Vulkan format if not supported.
