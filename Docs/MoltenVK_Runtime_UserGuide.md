@@ -297,6 +297,7 @@ In addition to core *Vulkan* functionality, **MoltenVK**  also supports the foll
 - `VK_KHR_shader_float_controls`
 - `VK_KHR_shader_float_controls2`
 - `VK_KHR_shader_float16_int8`
+- `VK_KHR_shader_fma`
 - `VK_KHR_shader_integer_dot_product`
 - `VK_KHR_shader_maximal_reconvergence`
 - `VK_KHR_shader_non_semantic_info`
@@ -311,8 +312,10 @@ In addition to core *Vulkan* functionality, **MoltenVK**  also supports the foll
 - `VK_KHR_spirv_1_4`
 - `VK_KHR_storage_buffer_storage_class`
 - `VK_KHR_surface`
+- `VK_KHR_surface_maintenance1`
 - `VK_KHR_surface_protected_capabilities`
 - `VK_KHR_swapchain`
+- `VK_KHR_swapchain_maintenance1`
 - `VK_KHR_swapchain_mutable_format`
 - `VK_KHR_synchronization2`
 - `VK_KHR_timeline_semaphore`

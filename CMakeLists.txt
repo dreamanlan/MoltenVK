@@ -65,6 +65,12 @@ project(MoltenVK
 set(MVK_CONFIG_LOG_LEVEL "info" CACHE STRING "Set the default log level for MoltenVK. Options are: debug, info, warn, error, off. Default is 'info'.")
 set_property(CACHE MVK_CONFIG_LOG_LEVEL PROPERTY STRINGS "debug" "info" "warn" "error" "off")
 
+option(MVK_EXCLUDE_SPIRV_TOOLS "Exclude the SPIRV-Tools dependency. If excluded, disables printing debug SPIR-V disassembly." OFF)
+option(MVK_EXCLUDE_CEREAL "Exclude the cereal dependency. If excluded, disables reading and writing pipeline caches." OFF)
+option(MVK_USE_METAL_PRIVATE_API "If enabled, MoltenVK will use private interfaces exposed by Metal to implement Vulkan features that are difficult to support otherwise." OFF)
+
+option(MVK_BUILD_SHADER_CONVERTER_TOOL "If enabled, the MoltenVKShaderConverter executable will be built." OFF)
+
 # Set default minimum C++ standard
 if(MOLTEN_VK_TOPLEVEL_PROJECT)
 	set(CMAKE_CXX_STANDARD 17)
@@ -77,6 +83,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/MoltenVK/")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
 # General CMake utils
+set(CPM_USE_NAMED_CACHE_DIRECTORIES 1)
 include(MoltenVK_CPM_Cache)
 
 # Generate position-independent code by default
@@ -100,7 +107,9 @@ add_subdirectory("MoltenVKShaderConverter/MoltenVKShaderConverter")
 add_subdirectory("MoltenVK")
 
 ## MoltenVKShaderConverter
-add_subdirectory("MoltenVKShaderConverter/MoltenVKShaderConverterTool")
+if(MVK_BUILD_SHADER_CONVERTER_TOOL)
+    add_subdirectory("MoltenVKShaderConverter/MoltenVKShaderConverterTool")
+endif()
 
 ################################################################################
 # Install
@@ -115,7 +124,13 @@ if(MOLTEN_VK_TOPLEVEL_PROJECT)
 
 	configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Templates/cmake/MoltenVK.pc.in" MoltenVK.pc @ONLY)
 	install(FILES ${CMAKE_BINARY_DIR}/MoltenVK.pc
-			DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
+			DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
-	install(TARGETS MoltenVKShaderConverter)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Templates/cmake/MoltenVK_icd.json.in" MoltenVK_icd.json @ONLY)
+    install(FILES ${CMAKE_BINARY_DIR}/MoltenVK_icd.json
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/etc/vulkan/icd.d)
+
+    if(MVK_BUILD_SHADER_CONVERTER_TOOL)
+        install(TARGETS MoltenVKShaderConverter)
+    endif()
 endif()
