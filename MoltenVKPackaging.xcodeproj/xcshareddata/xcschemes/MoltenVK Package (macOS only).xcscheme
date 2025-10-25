@@ -47,6 +47,7 @@
       queueDebuggingEnabled = "No">
       <PathRunnable
          runnableDebuggingMode = "0"
+         BundleIdentifier = "com.yuzu-emu.yuzu"
          FilePath = "/Users/dreaman/Documents/GitHub/myuzu/xcodebuild/bin/Release/yuzu.app">
       </PathRunnable>
       <MacroExpansion>
@@ -58,6 +59,18 @@
             ReferencedContainer = "container:MoltenVKPackaging.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "MTL_DEBUG_LAYER"
+            value = "1"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "MTL_DEBUG_LAYER_ERROR_MODE"
+            value = "nslog"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

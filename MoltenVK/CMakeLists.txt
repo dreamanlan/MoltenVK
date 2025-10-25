@@ -20,6 +20,7 @@ target_include_directories(MoltenVK
 		"${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK/OS"
 		"${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK/Utility"
 		"${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK/Vulkan"
+		"${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK/DebugScript"
 		"${CMAKE_CURRENT_BINARY_DIR}" # for mvkGitRevDerived.h
 )
 

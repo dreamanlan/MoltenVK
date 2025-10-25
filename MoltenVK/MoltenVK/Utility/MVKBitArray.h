@@ -20,6 +20,7 @@
 #pragma once
 
 #include "MVKFoundation.h"
+#include "DbgScpHookHelper.h"
 
 #include <cassert>
 #include <type_traits>
@@ -350,9 +351,21 @@ class MVKBitArray {
 		return _data == &_capacity ? ElemSize : _capacity;
 	}
 
+    void onInit() {
+        dbgscpHookOnInitBitArray(reinterpret_cast<uint64_t>(this), reinterpret_cast<uint64_t>(_data), _size, _capacity);
+    }
+    void onChange(int tag, const char* func) {
+        dbgscpHookOnChangeBitArray(reinterpret_cast<uint64_t>(this), reinterpret_cast<uint64_t>(_data), _size, _capacity, tag, func);
+    }
+    void onFinalize() {
+        dbgscpHookOnFinalizeBitArray(reinterpret_cast<uint64_t>(this));
+    }
+    
 	void freeBuffer() {
-		if (_data != &_capacity)
-			free(_data);
+        if (_data != &_capacity) {
+            free(_data);
+            _data = &_capacity;
+        }
 	}
 
 	MVKArrayRef<std::size_t> elems() {
@@ -364,8 +377,8 @@ class MVKBitArray {
 	}
 
 public:
-	MVKBitArray(): _data(&_capacity) {}
-	MVKBitArray(std::size_t size, bool value): MVKBitArray() { resizeAndClear(size, value); }
+    MVKBitArray(): _data(&_capacity) { onInit(); }
+    MVKBitArray(std::size_t size, bool value): MVKBitArray() { resizeAndClear(size, value); }
 	MVKBitArray(const MVKBitArray& other): MVKBitArray() {
 		_size = other._size;
 		if (other._size <= ElemSize) {
@@ -377,8 +390,12 @@ public:
 			_data = static_cast<std::size_t*>(malloc(bytes));
 			memcpy(_data, other._data, bytes);
 		}
+        onChange(0, __PRETTY_FUNCTION__);
 	}
-	~MVKBitArray() { freeBuffer(); }
+	~MVKBitArray() {
+        onFinalize();
+        freeBuffer();
+    }
 
 	MVKBitArray& operator=(const MVKBitArray& other) {
 		_size = other._size;
@@ -394,6 +411,7 @@ public:
 			}
 			memcpy(_data, other._data, bytes);
 		}
+        onChange(1, __PRETTY_FUNCTION__);
 		return *this;
 	}
 
@@ -411,6 +429,7 @@ public:
 
 		if (newSize <= ElemSize) {
 			*_data = value ? MVKSmallStaticBitSet<std::size_t>::range(0, newSize).bits() : 0;
+            onChange(2, __PRETTY_FUNCTION__);
 			return;
 		}
 
@@ -425,6 +444,7 @@ public:
 		}
 		if (value)
 			_data[elems - 1] = detail::maskHi<std::size_t>(newSize);
+        onChange(3, __PRETTY_FUNCTION__);
 	}
 
 	/**
@@ -460,7 +480,8 @@ public:
 				setRange(oldSize, newSize);
 			else
 				clearRange(oldSize, newSize);
-		}
+        }
+        onChange(4, __PRETTY_FUNCTION__);
 	}
 
 	/** Returns an iterator over iterators over the set bits in this array. */
@@ -470,12 +491,14 @@ public:
 	void setRange(std::size_t begin, std::size_t end) {
 		assert(end <= _size);
 		detail::applyToBitRange(elems(), begin, end, [](std::size_t& val, std::size_t mask){ val |= mask; });
+        onChange(5, __PRETTY_FUNCTION__);
 	}
 
 	/** Clears all bits in the given range. */
 	void clearRange(std::size_t begin, std::size_t end) {
 		assert(end <= _size);
 		detail::applyToBitRange(elems(), begin, end, [](std::size_t& val, std::size_t mask){ val &= ~mask; });
+        onChange(6, __PRETTY_FUNCTION__);
 	}
 
 	/** Sets or clears the given bit. */
@@ -484,13 +507,14 @@ public:
 		std::size_t& word = _data[bit.wordOffset];
 		std::size_t flag = static_cast<std::size_t>(1ull << bit.bitOffset);
 		word = value ? word | flag : word & ~flag;
+        onChange(7, __PRETTY_FUNCTION__);
 	}
 	/** Sets or clears the given bit. */
-	void set(std::size_t bit, bool value = true) { set({ bit / ElemSize, bit % ElemSize }, value); }
+    void set(std::size_t bit, bool value = true) { set({ bit / ElemSize, bit % ElemSize }, value);onChange(8, __PRETTY_FUNCTION__); }
 	/** Clears the given bit. A convenience function for set(bit, false). */
-	void clear(MVKBitPointer<std::size_t> bit) { set(bit, false); }
+    void clear(MVKBitPointer<std::size_t> bit) { set(bit, false);onChange(9, __PRETTY_FUNCTION__); }
 	/** Clears the given bit. A convenience function for set(bit, false). */
-	void clear(std::size_t bit) { set(bit, false); }
+    void clear(std::size_t bit) { set(bit, false);onChange(10, __PRETTY_FUNCTION__); }
 	/** Returns whether the given bit is set. */
 	bool get(MVKBitPointer<std::size_t> bit) const {
 		assert(static_cast<std::size_t>(bit) < _size);

@@ -2353,6 +2353,9 @@ MVKPhysicalDevice::MVKPhysicalDevice(MVKInstance* mvkInstance, id<MTLDevice> mtl
 	_supportedExtensions(this, true),
 	_pixelFormats(this) {				// Set after _mtlDevice & _gpuCapabilities
 
+    extern void dbgscpInit();
+    dbgscpInit();
+        
 	initMTLDevice();           			// Call first.
 	initProperties();           		// Call second.
 	initMetalFeatures();        		// Call third.
