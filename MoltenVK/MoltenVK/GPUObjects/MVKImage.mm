@@ -122,6 +122,9 @@ id<MTLTexture> MVKImagePlane::getMTLTexture(MTLPixelFormat mtlPixFmt) {
 
 void MVKImagePlane::releaseMTLTexture() {
     MVKDevice* dev = _image->_device;
+    if (!dev) {
+        return;
+    }
     MVKLiveResourceSet& live = dev->getLiveResources();
     if (id<MTLTexture> tex = _mtlTexture) {
         dev->removeResidency(tex);
