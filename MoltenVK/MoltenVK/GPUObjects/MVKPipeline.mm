@@ -890,7 +890,9 @@ MVKGraphicsPipeline::MVKGraphicsPipeline(MVKDevice* device,
 			  _vkPrimitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ||
 			  _vkPrimitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN ||
 			  _dynamicStateFlags.has(MVKRenderStateFlag::PrimitiveTopology))) {
-			reportWarning(VK_ERROR_FEATURE_NOT_PRESENT, "Metal does not support disabling primitive restart.");
+			if (!primitiveRestart) {
+				reportWarning(VK_ERROR_FEATURE_NOT_PRESENT, "Metal does not support disabling primitive restart.");
+			}
 		}
 #if MVK_USE_METAL_PRIVATE_API
 	}
