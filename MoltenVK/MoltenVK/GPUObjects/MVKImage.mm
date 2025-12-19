@@ -25,6 +25,7 @@
 #include "MVKFoundation.h"
 #include "MVKOSExtensions.h"
 #include "MVKCodec.h"
+#include "DbgScpHookHelper.h"
 
 #import "MTLSamplerDescriptor+MoltenVK.h"
 #import "CAMetalLayer+MoltenVK.h"
@@ -112,6 +113,7 @@ id<MTLTexture> MVKImagePlane::getMTLTexture(MTLPixelFormat mtlPixFmt) {
         lock_guard<mutex> lock(_image->_lock);
         mtlTex = _mtlTextureViews[mtlPixFmt];
         if ( !mtlTex ) {
+            dbgscpHookOnNewTextureViewWithPixelFormat(static_cast<int>(mtlPixFmt), static_cast<int>([baseTexture pixelFormat]));
             mtlTex = [baseTexture newTextureViewWithPixelFormat: mtlPixFmt];    // retained
             _image->_device->getLiveResources().add(mtlTex);
             _mtlTextureViews[mtlPixFmt] = mtlTex;
@@ -1928,6 +1930,7 @@ id<MTLTexture> MVKImageViewPlane::newMTLTexture() {
     }
 
     id<MTLTexture> texView = nil;
+    dbgscpHookOnNewTextureViewWithPixelFormat(static_cast<int>(_mtlPixFmt), static_cast<int>([mtlTex pixelFormat]));
     if (_useSwizzle) {
         texView = [mtlTex newTextureViewWithPixelFormat: _mtlPixFmt
                                             textureType: _imageView->_mtlTextureType

@@ -8,6 +8,7 @@
 
 #include "DbgScpHookHelper.h"
 #include "DebugScriptEntry.h"
+#include "DbgScpHook.h"
 
 void dbgscpInit()
 {
@@ -26,4 +27,8 @@ void dbgscpHookOnFinalizeBitArray(uint64_t thisAddr)
 void dbgscpHookOnChangeBitArray(uint64_t thisAddr, std::size_t data, std::size_t size, std::size_t capacity, int tag, const char* func)
 {
     DBGSCP_HOOK_VOID("dbgscpHookOnChangeBitArray", thisAddr, data, size, capacity, tag, func);
+}
+void dbgscpHookOnNewTextureViewWithPixelFormat(int viewPixFmt, int texPixFmt)
+{
+    DBGSCP_HOOK_VOID("dbgscpHookOnNewTextureViewWithPixelFormat", viewPixFmt, texPixFmt);
 }

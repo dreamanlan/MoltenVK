@@ -25,6 +25,7 @@
 #include "MVKFramebuffer.h"
 #include "MVKRenderPass.h"
 #include "mvk_datatypes.hpp"
+#include "DbgScpHookHelper.h"
 #include <algorithm>
 #include <sys/mman.h>
 
@@ -534,6 +535,7 @@ void MVKCmdBlitImage<N>::encode(MVKCommandEncoder* cmdEncoder, MVKCommandUse com
         if (blitCnt && srcMTLTex && dstMTLTex) {
 			if (_srcImage->needsSwizzle()) {
 				// Use a view that has a swizzle on it.
+                dbgscpHookOnNewTextureViewWithPixelFormat(static_cast<int>(srcMTLTex.pixelFormat), static_cast<int>([srcMTLTex pixelFormat]));
 				srcMTLTex = [srcMTLTex newTextureViewWithPixelFormat:srcMTLTex.pixelFormat
 														 textureType:srcMTLTex.textureType
 															  levels:NSMakeRange(0, srcMTLTex.mipmapLevelCount)
@@ -578,6 +580,7 @@ void MVKCmdBlitImage<N>::encode(MVKCommandEncoder* cmdEncoder, MVKCommandUse com
                 // In this case, I'll use a temp 2D array view. That way, I don't have to
                 // deal with mapping the blit coordinates to a cube direction vector.
                 blitKey.srcMTLTextureType = MTLTextureType2DArray;
+                dbgscpHookOnNewTextureViewWithPixelFormat(static_cast<int>(blitKey.getSrcMTLPixelFormat()), static_cast<int>([srcMTLTex pixelFormat]));
                 srcMTLTex = [srcMTLTex newTextureViewWithPixelFormat: blitKey.getSrcMTLPixelFormat()
                                                          textureType: MTLTextureType2DArray
                                                               levels: NSMakeRange(0, srcMTLTex.mipmapLevelCount)
@@ -696,6 +699,7 @@ void MVKCmdBlitImage<N>::encode(MVKCommandEncoder* cmdEncoder, MVKCommandUse com
                             stencilFmt = MTLPixelFormatX24_Stencil8;
 #endif
                         }
+                        dbgscpHookOnNewTextureViewWithPixelFormat(static_cast<int>(stencilFmt), static_cast<int>([srcMTLTex pixelFormat]));
                         id<MTLTexture> stencilMTLTex = [srcMTLTex newTextureViewWithPixelFormat: stencilFmt];
                         [cmdEncoder->_mtlCmdBuffer addCompletedHandler: ^(id<MTLCommandBuffer>) { [stencilMTLTex release]; }];
                         [mtlRendEnc setFragmentTexture: stencilMTLTex atIndex: 1];
