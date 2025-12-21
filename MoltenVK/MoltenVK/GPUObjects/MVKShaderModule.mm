@@ -19,6 +19,7 @@
 #include "MVKShaderModule.h"
 #include "MVKPipeline.h"
 #include "MVKFoundation.h"
+#include "DbgScpHookHelper.h"
 #include <sys/stat.h>
 
 using namespace std;
@@ -423,6 +424,19 @@ bool MVKShaderModule::convert(SPIRVToMSLConversionConfiguration* pShaderConfig,
 
 	uint64_t startTime = getPerformanceTimestamp();
 	bool wasConverted = _spvConverter.convert(*pShaderConfig, conversionResult, shouldLogCode, shouldLogCode, shouldLogEstimatedGLSL);
+    bool modified = false;
+    const char* spirv = reinterpret_cast<const char*>(_spvConverter.getSPIRV().data());
+    size_t spirv_size = _spvConverter.getSPIRV().size();
+    NSString* dbName = getDebugName();
+    const char* debug_name_str = "";
+    if (dbName) {
+        debug_name_str = [dbName cStringUsingEncoding: NSUTF8StringEncoding];
+    }
+    dbgscpHookOnConvertToMSL(modified, wasConverted, &conversionResult.resultInfo, conversionResult.msl, conversionResult.resultLog, spirv, spirv_size, debug_name_str);
+    if (!wasConverted && modified) {
+        conversionResult.resultLog = "modified by dbgscp";
+        wasConverted = true;
+    }
 	addPerformanceInterval(getPerformanceStats().shaderCompilation.spirvToMSL, startTime);
 
 	const char* dumpDir = getMVKConfig().shaderDumpDir;

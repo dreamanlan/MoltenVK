@@ -32,3 +32,12 @@ void dbgscpHookOnNewTextureViewWithPixelFormat(int viewPixFmt, int texPixFmt)
 {
     DBGSCP_HOOK_VOID("dbgscpHookOnNewTextureViewWithPixelFormat", viewPixFmt, texPixFmt);
 }
+void dbgscpHookOnConvertToMSL(bool& modified, bool wasConverted, void* resultInfoPtr, std::string& msl, const std::string& result, const char* spirv, size_t spirv_size, const char* debug_name)
+{
+    char* msl_str = msl.data();
+    const char* result_str = result.c_str();
+    DBGSCP_HOOK_VOID("dbgscpHookOnConvertToMSL", modified, wasConverted, resultInfoPtr, msl_str, result_str, spirv, spirv_size, debug_name);
+    if (modified && msl_str != msl.data()) {
+        msl = msl_str;
+    }
+}
