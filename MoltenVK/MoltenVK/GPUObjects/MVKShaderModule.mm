@@ -21,6 +21,7 @@
 #include "MVKFoundation.h"
 #include "DbgScpHookHelper.h"
 #include <sys/stat.h>
+#include <fstream>
 
 using namespace std;
 using namespace mvk;
@@ -424,22 +425,31 @@ bool MVKShaderModule::convert(SPIRVToMSLConversionConfiguration* pShaderConfig,
 
 	uint64_t startTime = getPerformanceTimestamp();
 	bool wasConverted = _spvConverter.convert(*pShaderConfig, conversionResult, shouldLogCode, shouldLogCode, shouldLogEstimatedGLSL);
+	addPerformanceInterval(getPerformanceStats().shaderCompilation.spirvToMSL, startTime);
+
+	const char* dumpDir = getMVKConfig().shaderDumpDir;
     bool modified = false;
-    const char* spirv = reinterpret_cast<const char*>(_spvConverter.getSPIRV().data());
-    size_t spirv_size = _spvConverter.getSPIRV().size();
+    bool saveToFile = false;
     NSString* dbName = getDebugName();
     const char* debug_name_str = "";
     if (dbName) {
         debug_name_str = [dbName cStringUsingEncoding: NSUTF8StringEncoding];
     }
-    dbgscpHookOnConvertToMSL(modified, wasConverted, &conversionResult.resultInfo, conversionResult.msl, conversionResult.resultLog, spirv, spirv_size, debug_name_str);
-    if (!wasConverted && modified) {
-        conversionResult.resultLog = "modified by dbgscp";
-        wasConverted = true;
+    const size_t c_max_path = 1024;
+    char replace_path[c_max_path + 1] = { 0 };
+    char* replace_path_ptr = replace_path;
+    dbgscpHookOnConvertToMSL(modified, saveToFile, wasConverted, &conversionResult.resultInfo, conversionResult.msl, conversionResult.resultLog, debug_name_str, replace_path_ptr);
+    if (saveToFile) {
+        dumpDir = ".";
     }
-	addPerformanceInterval(getPerformanceStats().shaderCompilation.spirvToMSL, startTime);
-
-	const char* dumpDir = getMVKConfig().shaderDumpDir;
+    if (modified) {
+        bool r = ReadFileToString(std::string(replace_path_ptr), conversionResult.msl);
+        if (r) {
+            conversionResult.resultLog = std::string();
+            if (!wasConverted)
+                wasConverted = true;
+        }
+    }
 	if (dumpDir && *dumpDir) {
 		char path[PATH_MAX];
 		const char* type;
@@ -455,14 +465,16 @@ bool MVKShaderModule::convert(SPIRVToMSLConversionConfiguration* pShaderConfig,
 			default:                                        type = "";    break;
 		}
 		mkdir(dumpDir, 0755);
-		snprintf(path, sizeof(path), "%s/shader%s-%016zx.spv", dumpDir, type, _key.codeHash);
-		FILE* file = fopen(path, "wb");
-		if (file) {
-			fwrite(_spvConverter.getSPIRV().data(), sizeof(uint32_t), _spvConverter.getSPIRV().size(), file);
-			fclose(file);
-		}
-		snprintf(path, sizeof(path), "%s/shader%s-%016zx.metal", dumpDir, type, _key.codeHash);
-		file = fopen(path, "wb");
+        if (!debug_name_str[0]) {
+            snprintf(path, sizeof(path), "%s/shader%s-%016zx.spv", dumpDir, type, _key.codeHash);
+            FILE* file0 = fopen(path, "wb");
+            if (file0) {
+                fwrite(_spvConverter.getSPIRV().data(), sizeof(uint32_t), _spvConverter.getSPIRV().size(), file0);
+                fclose(file0);
+            }
+        }
+		snprintf(path, sizeof(path), "%s/shader%s-%016zx-[%s].metal", dumpDir, type, _key.codeHash, debug_name_str);
+        FILE* file = fopen(path, "wb");
 		if (file) {
 			if (wasConverted) {
 				fwrite(conversionResult.msl.data(), 1, conversionResult.msl.size(), file);
