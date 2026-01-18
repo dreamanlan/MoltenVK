@@ -324,6 +324,11 @@
 		B26D73832EACD8ED0005980A /* DbgScpHookHelper.h in Headers */ = {isa = PBXBuildFile; fileRef = B26D73812EACD8E20005980A /* DbgScpHookHelper.h */; };
 		B26D73852EACD8F80005980A /* DbgScpHookHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B26D73842EACD8F10005980A /* DbgScpHookHelper.cpp */; };
 		B26D73862EACD8F80005980A /* DbgScpHookHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B26D73842EACD8F10005980A /* DbgScpHookHelper.cpp */; };
+		B2EE60732F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2EE60712F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm */; };
+		B2EE60752F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2EE60712F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm */; };
+		B2EE60772F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2EE60712F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm */; };
+		B2EE60792F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2EE60712F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm */; };
+		B2EE607B2F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm in Sources */ = {isa = PBXBuildFile; fileRef = B2EE60712F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -536,6 +541,7 @@
 		B26D734C2EACCFFF0005980A /* sema.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = sema.h; path = DebugScript/sema.h; sourceTree = "<group>"; };
 		B26D73812EACD8E20005980A /* DbgScpHookHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DbgScpHookHelper.h; sourceTree = "<group>"; };
 		B26D73842EACD8F10005980A /* DbgScpHookHelper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DbgScpHookHelper.cpp; sourceTree = "<group>"; };
+		B2EE60712F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = GpuCaptureManager_Metal.mm; path = DebugScript/GpuCaptureManager_Metal.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -593,6 +599,7 @@
 		A94FB7641C7DFB4800632CA3 /* MoltenVK */ = {
 			isa = PBXGroup;
 			children = (
+				B2EE60712F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm */,
 				B26D73432EACCFFF0005980A /* DbgScpHook.h */,
 				B26D73442EACCFFF0005980A /* debug_break.h */,
 				B26D73452EACCFFF0005980A /* DebugScriptEntry.h */,
@@ -1435,6 +1442,7 @@
 			files = (
 				B26D73552EACCFFF0005980A /* DebugScriptVM.cpp in Sources */,
 				B26D73562EACCFFF0005980A /* DebugScriptExternApiAndEntry.cpp in Sources */,
+				B2EE60792F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1489,6 +1497,7 @@
 				A94FB7BE1C7DFB4800632CA3 /* MVKCmdPipeline.mm in Sources */,
 				A94FB81E1C7DFB4800632CA3 /* MVKLayers.mm in Sources */,
 				A94FB7EE1C7DFB4800632CA3 /* MVKFramebuffer.mm in Sources */,
+				B2EE60732F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm in Sources */,
 				A9C96DD21DDC20C20053187F /* MVKMTLBufferAllocation.mm in Sources */,
 				A9E53DE92100B197002781DD /* CAMetalLayer+MoltenVK.mm in Sources */,
 				A9096E5E1F81E16300DFBEA6 /* MVKCmdDispatch.mm in Sources */,
@@ -1547,6 +1556,7 @@
 				A94FB7BF1C7DFB4800632CA3 /* MVKCmdPipeline.mm in Sources */,
 				A94FB81F1C7DFB4800632CA3 /* MVKLayers.mm in Sources */,
 				A94FB7EF1C7DFB4800632CA3 /* MVKFramebuffer.mm in Sources */,
+				B2EE60772F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm in Sources */,
 				A9C96DD31DDC20C20053187F /* MVKMTLBufferAllocation.mm in Sources */,
 				A9E53DEA2100B197002781DD /* CAMetalLayer+MoltenVK.mm in Sources */,
 				A9096E5F1F81E16300DFBEA6 /* MVKCmdDispatch.mm in Sources */,
@@ -1560,6 +1570,7 @@
 			files = (
 				B26D73732EACCFFF0005980A /* DebugScriptVM.cpp in Sources */,
 				B26D73742EACCFFF0005980A /* DebugScriptExternApiAndEntry.cpp in Sources */,
+				B2EE60752F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1569,6 +1580,7 @@
 			files = (
 				B26D73752EACCFFF0005980A /* DebugScriptVM.cpp in Sources */,
 				B26D73762EACCFFF0005980A /* DebugScriptExternApiAndEntry.cpp in Sources */,
+				B2EE607B2F12D8FD00E6E7EB /* GpuCaptureManager_Metal.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
