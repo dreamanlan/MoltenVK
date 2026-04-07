@@ -19,6 +19,7 @@
 
 #include "MVKLayers.h"
 #include "MVKInstance.h"
+#include <execinfo.h>
 #include "MVKDevice.h"
 #include "MVKCommandPool.h"
 #include "MVKCommandBuffer.h"
@@ -1286,6 +1287,23 @@ MVK_PUBLIC_VULKAN_SYMBOL void vkDestroyFramebuffer(
 	const VkAllocationCallbacks*                pAllocator) {
 
 	MVKTraceVulkanCallStart();
+	if (framebuffer) {
+		MVKFramebuffer* mvkFB = (MVKFramebuffer*)framebuffer;
+		uint32_t rc = mvkFB->getRefCount();
+		uint64_t tid;
+		pthread_threadid_np(NULL, &tid);
+		fprintf(stderr, "[MVK-DBG] vkDestroyFramebuffer: fb=%p refCount=%u tid=%llu (before destroy)\n", mvkFB, rc, tid);
+		// Print backtrace
+		void* bt[16];
+		int n = backtrace(bt, 16);
+		char** syms = backtrace_symbols(bt, n);
+		if (syms) {
+			for (int i = 0; i < n; i++) {
+				fprintf(stderr, "  [bt] %s\n", syms[i]);
+			}
+			free(syms);
+		}
+	}
 	MVKDevice* mvkDev = MVKDevice::getMVKDevice(device);
 	mvkDev->destroyFramebuffer((MVKFramebuffer*)framebuffer, pAllocator);
 	MVKTraceVulkanCallEnd();

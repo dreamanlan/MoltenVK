@@ -152,6 +152,9 @@ public:
 	 */
 	void retain() { _refCount.fetch_add(1, std::memory_order_relaxed); }
 
+	/** Returns the current reference count. For debugging purposes only. */
+	uint32_t getRefCount() const { return _refCount.load(std::memory_order_relaxed); }
+
 	/**
 	 * Called when this instance has been released as a reference from another object.
 	 * Once all references have been released, this object is free to be deleted.

@@ -47,7 +47,14 @@ void MVKCommandEncodingContext::setRenderingContext(MVKRenderPass* renderPass, M
 	_renderPass = renderPass;
 
 	if (framebuffer) { framebuffer->retain(); }
-	if (_framebuffer) { _framebuffer->release(); }
+	if (_framebuffer) {
+		uint32_t rc = _framebuffer->getRefCount();
+		if (rc <= 1) {
+			fprintf(stderr, "[MVK-DBG] setRenderingContext: releasing _framebuffer %p with refCount=%u (will delete!), new fb=%p\n",
+					_framebuffer, rc, framebuffer);
+		}
+		_framebuffer->release();
+	}
 	_framebuffer = framebuffer;
 }
 
@@ -541,6 +548,15 @@ void MVKCommandEncoder::beginRenderpass(MVKCommand* passCmd,
 										MVKArrayRef<MVKImageView*> attachments,
 										MVKCommandUse cmdUse) {
 
+	if (framebuffer) {
+		uint32_t rc = framebuffer->getRefCount();
+		uint64_t tid;
+		pthread_threadid_np(NULL, &tid);
+		fprintf(stderr, "[MVK-DBG] beginRenderpass: fb=%p refCount=%u tid=%llu (before retain)\n", framebuffer, rc, tid);
+		if (rc == 0) {
+			fprintf(stderr, "[MVK-DBG] WARNING: framebuffer refCount is 0! Already destroyed?\n");
+		}
+	}
 	_pEncodingContext->setRenderingContext(renderPass, framebuffer);
 	_renderArea = renderArea;
 	_isRenderingEntireAttachment = (mvkVkOffset2DsAreEqual(_renderArea.offset, {0,0}) &&
