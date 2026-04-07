@@ -273,6 +273,25 @@ function update_repo_head() {
 	fi
 }
 
+function update_repo_branch_head() {
+	echo "$1 repo: $2"
+	echo "$1 revision: head"
+	echo "$1 branch: $3"
+
+	if [ -d $1 -a -d $1/.git ]; then
+		cd $1
+		git pull
+		git checkout --force
+		cd -  > /dev/null
+	else
+		rm -rf $1
+		git clone -b $3 $2 $1
+		cd $1
+		git checkout
+		cd -  > /dev/null
+	fi
+}
+
 # Build a repository
 # $1 repo name
 function build_repo() {
@@ -355,11 +374,11 @@ if [ ! "$SPIRV_CROSS_ROOT" = "" ]; then
 	ln -sfn ${SPIRV_CROSS_ROOT} ${REPO_NAME}
 else
 	# REPO_URL="https://github.com/KhronosGroup/${REPO_NAME}.git"
-	REPO_URL="https://github.com/dreamanlan/SPIRV-Cross/tree/ForSuyuMoltenVK"
+	REPO_URL="https://github.com/dreamanlan/SPIRV-Cross.git"
 	# REPO_REV=$(cat "${EXT_REV_DIR}/${REPO_NAME}_repo_revision")
 
 	# update_repo ${REPO_NAME} ${REPO_URL} ${REPO_REV}
-	update_repo_head ${REPO_NAME} ${REPO_URL}
+	update_repo_branch_head ${REPO_NAME} ${REPO_URL} ForSuyuMoltenVK
 fi
 
 
