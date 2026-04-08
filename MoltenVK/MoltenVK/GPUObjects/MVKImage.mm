@@ -2281,10 +2281,12 @@ MVKImageView::~MVKImageView() {
 }
 
 // Overridden to detach from the resource memory when the app destroys this object.
-// This object can be retained in a descriptor after the app destroys it, even
-// though the descriptor can't use it. But doing so retains usuable resource memory.
+// This object can be retained by a framebuffer or descriptor after the app destroys it.
+// Only detach memory if this is the last reference, otherwise defer to the destructor.
 void MVKImageView::destroy() {
-	detachMemory();
+	if (getRefCount() <= 1) {
+		detachMemory();
+	}
 	MVKVulkanAPIDeviceObject::destroy();
 }
 

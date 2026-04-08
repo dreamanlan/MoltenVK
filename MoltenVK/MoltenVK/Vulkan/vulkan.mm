@@ -20,6 +20,9 @@
 #include "MVKLayers.h"
 #include "MVKInstance.h"
 #include <execinfo.h>
+
+extern bool g_mvk_dbg_render_crash_log;
+
 #include "MVKDevice.h"
 #include "MVKCommandPool.h"
 #include "MVKCommandBuffer.h"
@@ -1287,7 +1290,7 @@ MVK_PUBLIC_VULKAN_SYMBOL void vkDestroyFramebuffer(
 	const VkAllocationCallbacks*                pAllocator) {
 
 	MVKTraceVulkanCallStart();
-	if (framebuffer) {
+	if (framebuffer && g_mvk_dbg_render_crash_log) {
 		MVKFramebuffer* mvkFB = (MVKFramebuffer*)framebuffer;
 		uint32_t rc = mvkFB->getRefCount();
 		uint64_t tid;

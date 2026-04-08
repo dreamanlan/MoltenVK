@@ -73,7 +73,9 @@ MVKFramebuffer::MVKFramebuffer(MVKDevice* device,
 	if ( !mvkIsAnyFlagEnabled(pCreateInfo->flags, VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT) ) {
 		_attachments.reserve(pCreateInfo->attachmentCount);
 		for (uint32_t i = 0; i < pCreateInfo->attachmentCount; i++) {
-			_attachments.push_back((MVKImageView*)pCreateInfo->pAttachments[i]);
+			auto* imgView = (MVKImageView*)pCreateInfo->pAttachments[i];
+			_attachments.push_back(imgView);
+			if (imgView) { imgView->retain(); }
 		}
 	}
 }
@@ -92,11 +94,15 @@ MVKFramebuffer::MVKFramebuffer(MVKDevice* device,
 	attIter.iterate([&](const VkRenderingAttachmentInfo* pAttInfo, VkImageAspectFlagBits aspect, MVKImageView* imgView, bool isResolveAttachment)->void {
 		_attachments.push_back(imgView);
 		if (imgView) {
+			imgView->retain();
 			_extent = mvkVkExtent2DFromVkExtent3D(imgView->getExtent3D());
 		}
 	});
 }
 
 MVKFramebuffer::~MVKFramebuffer() {
+	for (auto* imgView : _attachments) {
+		if (imgView) { imgView->release(); }
+	}
 	[_mtlDummyTex release];
 }

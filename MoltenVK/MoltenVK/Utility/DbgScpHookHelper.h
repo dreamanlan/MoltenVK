@@ -18,3 +18,4 @@ extern void dbgscpHookOnFinalizeBitArray(uint64_t thisAddr);
 extern void dbgscpHookOnChangeBitArray(uint64_t thisAddr, std::size_t data, std::size_t size, std::size_t capacity, int tag, const char* func);
 extern void dbgscpHookOnNewTextureViewWithPixelFormat(int viewPixFmt, int texPixFmt);
 extern void dbgscpHookOnConvertToMSL(bool& modified, bool& saveToFile, bool wasConverted, void* resultInfoPtr, std::string& msl, const std::string& result, const char* debug_name, char*& replace_path_ptr);
+extern void dbgscpHookOnBeginRenderpass(bool& dbgFbLog);

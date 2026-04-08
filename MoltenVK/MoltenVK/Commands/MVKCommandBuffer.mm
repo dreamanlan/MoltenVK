@@ -26,6 +26,9 @@
 #include "MVKCmdDraw.h"
 #include "MVKCmdRendering.h"
 #include <sys/mman.h>
+#include "DbgScpHookHelper.h"
+
+extern bool g_mvk_dbg_render_crash_log;
 
 using namespace std;
 
@@ -49,7 +52,7 @@ void MVKCommandEncodingContext::setRenderingContext(MVKRenderPass* renderPass, M
 	if (framebuffer) { framebuffer->retain(); }
 	if (_framebuffer) {
 		uint32_t rc = _framebuffer->getRefCount();
-		if (rc <= 1) {
+		if (rc <= 1 && g_mvk_dbg_render_crash_log) {
 			fprintf(stderr, "[MVK-DBG] setRenderingContext: releasing _framebuffer %p with refCount=%u (will delete!), new fb=%p\n",
 					_framebuffer, rc, framebuffer);
 		}
@@ -548,7 +551,8 @@ void MVKCommandEncoder::beginRenderpass(MVKCommand* passCmd,
 										MVKArrayRef<MVKImageView*> attachments,
 										MVKCommandUse cmdUse) {
 
-	if (framebuffer) {
+	dbgscpHookOnBeginRenderpass(g_mvk_dbg_render_crash_log);
+	if (framebuffer && g_mvk_dbg_render_crash_log) {
 		uint32_t rc = framebuffer->getRefCount();
 		uint64_t tid;
 		pthread_threadid_np(NULL, &tid);

@@ -79,3 +79,10 @@ void dbgscpHookOnConvertToMSL(bool& modified, bool& saveToFile, bool wasConverte
     const char* result_str = result.c_str();
     DBGSCP_HOOK_VOID("dbgscpHookOnConvertToMSL", modified, saveToFile, wasConverted, resultInfoPtr, msl_str, result_str, debug_name, replace_path_ptr);
 }
+
+bool g_mvk_dbg_render_crash_log = false;
+
+void dbgscpHookOnBeginRenderpass(bool& dbgCrashLog)
+{
+    DBGSCP_HOOK_VOID("dbgscpHookOnBeginRenderpass", dbgCrashLog);
+}
