@@ -1023,6 +1023,11 @@ VkResult MVKImage::setMTLTexture(uint8_t planeIndex, id<MTLTexture> mtlTexture) 
     _planes[planeIndex]->releaseMTLTexture();
 	_planes[planeIndex]->_mtlTexture = [mtlTexture retain];		// retained
 
+	if (_planes[planeIndex]->_mtlTexture.storageMode != MTLStorageModeMemoryless) {
+		_device->makeResident(_planes[planeIndex]->_mtlTexture);
+		_device->getLiveResources().add(_planes[planeIndex]->_mtlTexture);
+	}
+
     _vkFormat = getPixelFormats()->getVkFormat(mtlTexture.pixelFormat);
 	_mtlTextureType = mtlTexture.textureType;
 	_extent.width = uint32_t(mtlTexture.width);
