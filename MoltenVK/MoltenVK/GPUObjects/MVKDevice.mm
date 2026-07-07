@@ -2471,6 +2471,7 @@ void MVKPhysicalDevice::initMetalFeatures() {
 	_metalFeatures.nativeTextureAtomics = mvkOSVersionIsAtLeast(14.0, 17.0, 1.0) && (supportsMTLGPUFamily(Metal3) || supportsMTLGPUFamily(Apple6) || supportsMTLGPUFamily(Mac2));
 
 	_metalFeatures.renderLinearTextures = _gpuCapabilities.supportsRenderLinearTextures;
+	_metalFeatures.nativeTextureSwizzle = false;
 
 	if (supportsMTLGPUFamily(Mac1)) {
 		_metalFeatures.mtlBufferAlignment = 256;
@@ -2505,6 +2506,7 @@ void MVKPhysicalDevice::initMetalFeatures() {
 		_metalFeatures.stencilResolve = true;
 		_metalFeatures.quadPermute = true;
 		_metalFeatures.simdReduction = true;
+		_metalFeatures.nativeTextureSwizzle = true;
     }
 
     if (supportsMTLGPUFamily(Apple1)) {
@@ -2522,6 +2524,7 @@ void MVKPhysicalDevice::initMetalFeatures() {
 		_metalFeatures.subgroupUniformControlFlow = true;
 		_metalFeatures.maximalReconvergence = true;
 		_metalFeatures.quadControlFlow = true;
+		_metalFeatures.nativeTextureSwizzle = true;
 
 		// Don't use barriers in render passes on Apple GPUs. Apple GPUs don't support them,
 		// and in fact Metal's validation layer will complain if you try to use them.
@@ -2736,7 +2739,6 @@ void MVKPhysicalDevice::initMetalFeatures() {
 	_metalFeatures.events = true;
 	_metalFeatures.ioSurfaces = true;
 	_metalFeatures.renderWithoutAttachments = true;
-	_metalFeatures.nativeTextureSwizzle = true;
 }
 
 bool MVKPhysicalDevice::isTier2MetalArgumentBuffers() {
@@ -3311,6 +3313,24 @@ void MVKPhysicalDevice::setMemoryHeap(uint32_t heapIndex, VkDeviceSize heapSize,
 void MVKPhysicalDevice::setMemoryType(uint32_t typeIndex, uint32_t heapIndex, VkMemoryPropertyFlags propertyFlags) {
 	_memoryProperties.memoryTypes[typeIndex].heapIndex = heapIndex;
 	_memoryProperties.memoryTypes[typeIndex].propertyFlags = propertyFlags;
+}
+
+bool MVKPhysicalDevice::isNVIDIAGPU() const {
+	return _properties.vendorID == kNVVendorId;
+}
+
+bool MVKPhysicalDevice::isIntelGPU() const {
+	return _properties.vendorID == kIntelVendorId;
+}
+
+bool MVKPhysicalDevice::isMacGPUFamily1() const {
+	return !_gpuCapabilities.isAppleGPU && _gpuCapabilities.supportsMac1 && !_gpuCapabilities.supportsMac2;
+}
+
+bool MVKPhysicalDevice::shouldEmulateReversedDepthViewport() const {
+	// Reversed Metal viewport depth is broken on legacy AMD Mac2 GPUs without Metal 3 support.
+	// This is roughly Radeon Pro 5xx-class hardware.
+	return _properties.vendorID == kAMDVendorId && _gpuCapabilities.supportsMac2 && !_gpuCapabilities.supportsMetal3;
 }
 
 void MVKPhysicalDevice::initMemoryProperties() {

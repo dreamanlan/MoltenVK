@@ -48,10 +48,15 @@ id<MTLTexture> MVKImagePlane::getMTLTexture() {
         MVKImageMemoryBinding* memoryBinding = getMemoryBinding();
 		MVKDeviceMemory* dvcMem = memoryBinding->_deviceMemory;
 
-        if (_image->_is2DViewOn3DImageCompatible && !dvcMem->ensureMTLHeap()) {
+        // 2D-view-on-3D and block-texel views need a heap-backed texture to alias the memory. ensureMTLHeap() can return
+        // true without creating a heap, so create one if possible, then check getMTLHeap() for an actual heap.
+        if (_image->_is2DViewOn3DImageCompatible || _image->_isBlockTexelViewCompatible) {
+            dvcMem->ensureMTLHeap();
+        }
+        if (_image->_is2DViewOn3DImageCompatible && !dvcMem->getMTLHeap()) {
             MVKAssert(0, "Creating a 2D view of a 3D texture currently requires a placement heap, which is not available.");
         }
-        if (_image->_isBlockTexelViewCompatible && !dvcMem->ensureMTLHeap()) {
+        if (_image->_isBlockTexelViewCompatible && !dvcMem->getMTLHeap()) {
             MVKAssert(0, "Creating an uncompressed view of a compressed texture currently requires a placement heap, which is not available.");
         }
 
@@ -1933,7 +1938,7 @@ id<MTLTexture> MVKImageViewPlane::newMTLTexture() {
 
     id<MTLTexture> texView = nil;
     dbgscpHookOnNewTextureViewWithPixelFormat(static_cast<int>(_mtlPixFmt), static_cast<int>([mtlTex pixelFormat]));
-    if (_useSwizzle) {
+    if (_useNativeSwizzle) {
         texView = [mtlTex newTextureViewWithPixelFormat: _mtlPixFmt
                                             textureType: _imageView->_mtlTextureType
                                                  levels: levelRange
@@ -1973,7 +1978,7 @@ MVKImageViewPlane::MVKImageViewPlane(MVKImageView* imageView,
             _imageView->_subresourceRange.levelCount == _imageView->_image->_mipLevels &&
             (_imageView->_mtlTextureType == MTLTextureType3D ||
              _imageView->_subresourceRange.layerCount == _imageView->_image->_arrayLayers) &&
-            !_useSwizzle) {
+            !_useNativeSwizzle) {
             _useMTLTextureView = false;
         }
     } else {
@@ -1983,7 +1988,8 @@ MVKImageViewPlane::MVKImageViewPlane(MVKImageView* imageView,
 
 VkResult MVKImageViewPlane::initSwizzledMTLPixelFormat(const VkImageViewCreateInfo* pCreateInfo) {
 
-	_useSwizzle = false;
+	_useNativeSwizzle = false;
+	_useShaderSwizzle = false;
 	_componentSwizzle = pCreateInfo->components;
 	VkImageAspectFlags aspectMask = pCreateInfo->subresourceRange.aspectMask;
 
@@ -2111,7 +2117,9 @@ VkResult MVKImageViewPlane::initSwizzledMTLPixelFormat(const VkImageViewCreateIn
 		}
 	}
 
-	_useSwizzle = !mvkVkComponentMappingsMatch(_componentSwizzle, {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A});
+	bool useSwizzle = !mvkVkComponentMappingsMatch(_componentSwizzle, {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A});
+	_useNativeSwizzle = useSwizzle && getMetalFeatures().nativeTextureSwizzle;
+	_useShaderSwizzle = useSwizzle && !getMetalFeatures().nativeTextureSwizzle;
 	return VK_SUCCESS;
 }
 
@@ -2138,7 +2146,7 @@ void MVKImageView::populateMTLRenderPassAttachmentDescriptor(MTLRenderPassAttach
     mtlAttDesc.texture = plane->getMTLTexture();
     // If a swizzle is being applied, use the unswizzled parent texture.
     // This is relevant for depth/stencil attachments that are also sampled and might have forced swizzles.
-    if (plane->_useSwizzle && mtlAttDesc.texture.parentTexture) {
+    if (plane->_useNativeSwizzle && mtlAttDesc.texture.parentTexture) {
         useView = false;
         mtlAttDesc.texture = mtlAttDesc.texture.parentTexture;
     }
@@ -2158,7 +2166,7 @@ void MVKImageView::populateMTLRenderPassAttachmentDescriptorResolve(MTLRenderPas
     mtlAttDesc.resolveTexture = plane->getMTLTexture();
     // If a swizzle is being applied, use the unswizzled parent texture.
     // This is relevant for depth/stencil attachments that are also sampled and might have forced swizzles.
-    if (plane->_useSwizzle && mtlAttDesc.resolveTexture.parentTexture) {
+    if (plane->_useNativeSwizzle && mtlAttDesc.resolveTexture.parentTexture) {
         useView = false;
         mtlAttDesc.resolveTexture = mtlAttDesc.resolveTexture.parentTexture;
     }
