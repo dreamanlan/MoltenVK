@@ -2418,6 +2418,7 @@ MVK_PUBLIC_VULKAN_SYMBOL void vkCmdDrawIndexedIndirectCount(
     uint32_t                                    stride) {
 
 	MVKTraceVulkanCallStart();
+	MVKAddCmd(DrawIndexedIndirect, commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 	MVKTraceVulkanCallEnd();
 }
 
@@ -2431,6 +2432,7 @@ MVK_PUBLIC_VULKAN_SYMBOL void vkCmdDrawIndirectCount(
     uint32_t                                    stride) {
 
 	MVKTraceVulkanCallStart();
+	MVKAddCmd(DrawIndirect, commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 	MVKTraceVulkanCallEnd();
 }
 
@@ -2468,7 +2470,6 @@ MVK_PUBLIC_VULKAN_SYMBOL VkResult vkCreateRenderPass2(
 	MVKTraceVulkanCallEnd();
 	return rslt;
 }
-
 MVK_PUBLIC_VULKAN_SYMBOL VkDeviceAddress vkGetBufferDeviceAddress(
 	VkDevice                                    device,
 	const VkBufferDeviceAddressInfo*            pInfo) {
@@ -4506,4 +4507,3 @@ MVK_PUBLIC_SYMBOL PFN_vkVoidFunction vk_icdGetPhysicalDeviceProcAddr(
 	MVKTraceVulkanCallEnd();
 	return func;
 }
-
