@@ -434,11 +434,14 @@ struct WatchPointCommandInfo {
     int64_t tid;
 };
 
-static std::recursive_mutex g_WatchPointMutex{};
 WatchPointCommandInfo g_WatchPointCommandInfoVK{0, 0, 0, 0, 0};
 
+static inline std::recursive_mutex& GetWatchPointMutexRef() {
+    static std::recursive_mutex s_WatchPointMutex;
+    return s_WatchPointMutex;
+}
 static void DbgScp_SetWatchPoint(short cmd, short flag, int size, int64_t addr, int64_t tid) {
-    std::lock_guard<std::recursive_mutex> lock(g_WatchPointMutex);
+    std::lock_guard<std::recursive_mutex> lock(GetWatchPointMutexRef());
 
     g_WatchPointCommandInfoVK.cmd = cmd;
     g_WatchPointCommandInfoVK.flag = flag;
@@ -447,7 +450,7 @@ static void DbgScp_SetWatchPoint(short cmd, short flag, int size, int64_t addr, 
     g_WatchPointCommandInfoVK.tid = tid;
 }
 static short DbgScp_GetWatchPoint(short& flag, int& size, int64_t& addr, int64_t& tid) {
-    std::lock_guard<std::recursive_mutex> lock(g_WatchPointMutex);
+    std::lock_guard<std::recursive_mutex> lock(GetWatchPointMutexRef());
 
     flag = g_WatchPointCommandInfoVK.flag;
     size = g_WatchPointCommandInfoVK.size;
